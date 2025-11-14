@@ -1,0 +1,111 @@
+/* Variables CSS - Palette de Couleurs Professionnelle Togo */
+:root {
+    /* Couleurs Principales */
+    --couleur-primaire: #1E40AF;
+    --couleur-primaire-claire: #3B82F6;
+    --couleur-primaire-foncee: #1E3A8A;
+    
+    --couleur-secondaire: #059669;
+    --couleur-secondaire-claire: #10B981;
+    --couleur-secondaire-foncee: #047857;
+    
+    --couleur-accent: #EA580C;
+    --couleur-accent-claire: #F97316;
+    --couleur-accent-foncee: #C2410C;
+    
+    /* Couleurs Neutres */
+    --couleur-neutre-50: #F8FAFC;
+    --couleur-neutre-100: #F1F5F9;
+    --couleur-neutre-200: #E2E8F0;
+    --couleur-neutre-300: #CBD5E1;
+    --couleur-neutre-400: #94A3B8;
+    --couleur-neutre-500: #64748B;
+    --couleur-neutre-600: #475569;
+    --couleur-neutre-700: #334155;
+    --couleur-neutre-800: #1E293B;
+    --couleur-neutre-900: #0F172A;
+    
+    /* Couleurs Sémantiques */
+    --couleur-succes: #059669;
+    --couleur-succes-claire: #D1FAE5;
+    --couleur-erreur: #DC2626;
+    --couleur-erreur-claire: #FEE2E2;
+    --couleur-avertissement: #D97706;
+    --couleur-avertissement-claire: #FEF3C7;
+    --couleur-info: #2563EB;
+    --couleur-info-claire: #DBEAFE;
+    
+    /* Drapeau Togo */
+    --vert-togo: #006A4E;
+    --jaune-togo: #FFCE00;
+    --rouge-togo: #D21034;
+    
+    /* Typographie */
+    --police-principale: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    --police-mono: 'Courier New', monospace;
+    
+    --taille-texte-xs: 0.75rem;
+    --taille-texte-sm: 0.875rem;
+    --taille-texte-base: 1rem;
+    --taille-texte-lg: 1.125rem;
+    --taille-texte-xl: 1.25rem;
+    --taille-texte-2xl: 1.5rem;
+    --taille-texte-3xl: 1.875rem;
+    --taille-texte-4xl: 2.25rem;
+    
+    /* Espacement */
+    --espacement-xs: 0.25rem;
+    --espacement-sm: 0.5rem;
+    --espacement-md: 1rem;
+    --espacement-lg: 1.5rem;
+    --espacement-xl: 2rem;
+    --espacement-2xl: 3rem;
+    
+    /* Rayons de Bordure */
+    --rayon-sm: 0.25rem;
+    --rayon-md: 0.375rem;
+    --rayon-lg: 0.5rem;
+    --rayon-xl: 0.75rem;
+    --rayon-2xl: 1rem;
+    --rayon-complet: 9999px;
+    
+    /* Ombres */
+    --ombre-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --ombre-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --ombre-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --ombre-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    
+    /* Transitions */
+    --transition-rapide: 150ms ease-in-out;
+    --transition-normale: 300ms ease-in-out;
+    --transition-lente: 500ms ease-in-out;
+    
+    /* Layout */
+    --largeur-sidebar: 280px;
+    --largeur-sidebar-reduite: 80px;
+    --hauteur-navbar: 70px;
+    --largeur-max-contenu: 1400px;
+    
+    /* Z-index */
+    --z-dropdown: 1000;
+    --z-sticky: 1020;
+    --z-fixed: 1030;
+    --z-modal-backdrop: 1040;
+    --z-modal: 1050;
+    --z-popover: 1060;
+    --z-tooltip: 1070;
+}
+
+/* Mode Sombre (Optionnel) */
+[data-theme="sombre"] {
+    --couleur-neutre-50: #0F172A;
+    --couleur-neutre-100: #1E293B;
+    --couleur-neutre-200: #334155;
+    --couleur-neutre-300: #475569;
+    --couleur-neutre-400: #64748B;
+    --couleur-neutre-500: #94A3B8;
+    --couleur-neutre-600: #CBD5E1;
+    --couleur-neutre-700: #E2E8F0;
+    --couleur-neutre-800: #F1F5F9;
+    --couleur-neutre-900: #F8FAFC;
+}

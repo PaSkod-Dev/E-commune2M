@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Gestionnaire de Cotisations Communautaires - Togo">
+    <title>Gestionnaire Cotisations Togo</title>
+    
+    <!-- Styles CSS -->
+    <link rel="stylesheet" href="styles/variables.css">
+    <link rel="stylesheet" href="styles/base.css">
+    <link rel="stylesheet" href="styles/composants.css">
+    <link rel="stylesheet" href="styles/layout.css">
+</head>
+<body>
+    <!-- Écran de chargement -->
+    <div id="ecran-chargement" class="ecran-chargement">
+        <div class="spinner-chargement">
+            <div class="drapeau-togo"></div>
+            <h2>Chargement de votre gestionnaire...</h2>
+            <div class="barre-progression">
+                <div class="progression" id="barre-progression"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Principale -->
+    <div id="application" class="application masque">
+        <!-- Barre de Navigation Supérieure -->
+        <header class="navbar-superieure">
+            <div class="navbar-contenu">
+                <div class="logo-section">
+                    <div class="drapeau-togo-mini"></div>
+                    <h1 class="titre-application">Gestionnaire Cotisations</h1>
+                    <span class="badge-version">v2.0</span>
+                </div>
+                
+                <div class="recherche-globale">
+                    <input type="text" id="recherche-globale" placeholder="Rechercher un cotisant, village..." class="champ-recherche">
+                    <button class="bouton-recherche" id="bouton-recherche">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="m21 21-4.35-4.35"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="actions-rapides">
+                    <button class="bouton-action" id="notifications" title="Notifications">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                        </svg>
+                        <span class="badge-notification">3</span>
+                    </button>
+                    <button class="bouton-action" id="export-rapide" title="Export Rapide">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7,10 12,15 17,10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                    </button>
+                    <div class="profil-utilisateur">
+                        <span class="nom-utilisateur">Administrateur</span>
+                        <button class="bouton-menu-profil" id="menu-profil">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="6,9 12,15 18,9"></polyline>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Contenu Principal -->
+        <div class="contenu-principal">
+            <!-- Sidebar Navigation -->
+            <aside class="sidebar-navigation" id="sidebar">
+                <nav class="menu-navigation">
+                    <ul class="liste-menu">
+                        <li class="element-menu actif" data-route="tableau-bord">
+                            <a href="#tableau-bord" class="lien-menu">
+                                <svg class="icone-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="3" width="7" height="7"></rect>
+                                    <rect x="14" y="3" width="7" height="7"></rect>
+                                    <rect x="14" y="14" width="7" height="7"></rect>
+                                    <rect x="3" y="14" width="7" height="7"></rect>
+                                </svg>
+                                <span class="texte-menu">Tableau de Bord</span>
+                            </a>
+                        </li>
+                        <li class="element-menu" data-route="cotisants">
+                            <a href="#cotisants" class="lien-menu">
+                                <svg class="icone-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="9" cy="7" r="4"></circle>
+                                    <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                                </svg>
+                                <span class="texte-menu">Cotisants</span>
+                                <span class="badge-compteur">247</span>
+                            </a>
+                        </li>
+                        <li class="element-menu" data-route="paiements">
+                            <a href="#paiements" class="lien-menu">
+                                <svg class="icone-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                                    <line x1="1" y1="10" x2="23" y2="10"></line>
+                                </svg>
+                                <span class="texte-menu">Paiements</span>
+                                <span class="badge-nouveau">12</span>
+                            </a>
+                        </li>
+                        <li class="element-menu" data-route="statistiques">
+                            <a href="#statistiques" class="lien-menu">
+                                <svg class="icone-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="12" y1="20" x2="12" y2="10"></line>
+                                    <line x1="18" y1="20" x2="18" y2="4"></line>
+                                    <line x1="6" y1="20" x2="6" y2="16"></line>
+                                </svg>
+                                <span class="texte-menu">Statistiques</span>
+                            </a>
+                        </li>
+                        <li class="element-menu" data-route="cantons">
+                            <a href="#cantons" class="lien-menu">
+                                <svg class="icone-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                                    <circle cx="12" cy="10" r="3"></circle>
+                                </svg>
+                                <span class="texte-menu">Cantons & Villages</span>
+                            </a>
+                        </li>
+                        <li class="element-menu" data-route="rapports">
+                            <a href="#rapports" class="lien-menu">
+                                <svg class="icone-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14,2 14,8 20,8"></polyline>
+                                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                                    <polyline points="10,9 9,9 8,9"></polyline>
+                                </svg>
+                                <span class="texte-menu">Rapports</span>
+                            </a>
+                        </li>
+                        <li class="element-menu" data-route="parametres">
+                            <a href="#parametres" class="lien-menu">
+                                <svg class="icone-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                                </svg>
+                                <span class="texte-menu">Paramètres</span>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </aside>
+
+            <!-- Zone de Contenu Dynamique -->
+            <main class="zone-contenu" id="zone-contenu">
+                <!-- Le contenu sera injecté dynamiquement ici -->
+            </main>
+        </div>
+    </div>
+
+    <!-- Scripts JavaScript -->
+    <script src="js/utilitaires/constantes.js"></script>
+    <script src="js/utilitaires/helpers.js"></script>
+    <script src="js/services/stockage-donnees.js"></script>
+    <script src="js/services/gestionnaire-routes.js"></script>
+    <script src="js/composants/base-composant.js"></script>
+    <script src="js/application.js"></script>
+    <script src="js/services/classification-service.js"></script>
+</body>
+</html>
