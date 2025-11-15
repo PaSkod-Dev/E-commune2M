@@ -9,6 +9,7 @@ class BaseComposant {
         this.etat = {};
         this.elementDOM = null;
         this.ecouteursEvenements = [];
+        this.actionsDelegation = new Map(); // Pour l'event delegation
     }
     
     /**
@@ -53,6 +54,96 @@ class BaseComposant {
     }
     
     /**
+     * Event Delegation - Configure un écouteur délégué sur un conteneur parent
+     * @param {HTMLElement|string} conteneur - Elément parent ou sélecteur
+     * @param {string} selecteur - Sélecteur CSS pour les éléments cibles
+     * @param {string} evenement - Type d'événement ('click', 'change', etc.)
+     * @param {Function} gestionnaire - Fonction gestionnaire
+     */
+    deleguerEvenement(conteneur, selecteur, evenement, gestionnaire) {
+        const element = typeof conteneur === 'string' 
+            ? document.querySelector(conteneur) 
+            : conteneur;
+        
+        if (!element) {
+            console.warn(`Conteneur introuvable pour la délégation: ${conteneur}`);
+            return;
+        }
+        
+        const gestionnaireDeleguee = (e) => {
+            // Trouver l'élément correspondant au sélecteur
+            const cible = e.target.closest(selecteur);
+            if (cible) {
+                // Appeler le gestionnaire avec le contexte approprié
+                gestionnaire.call(this, e, cible);
+            }
+        };
+        
+        element.addEventListener(evenement, gestionnaireDeleguee);
+        this.ecouteursEvenements.push({ element, evenement, gestionnaire: gestionnaireDeleguee });
+    }
+    
+    /**
+     * Configure des actions déléguées via data-attributes
+     * @param {HTMLElement|string} conteneur - Elément parent ou sélecteur
+     * @param {string} evenement - Type d'événement (par défaut 'click')
+     */
+    configurerActionsDelegation(conteneur, evenement = 'click') {
+        const element = typeof conteneur === 'string' 
+            ? document.querySelector(conteneur) 
+            : conteneur;
+        
+        if (!element) {
+            console.warn(`Conteneur introuvable pour les actions déléguées: ${conteneur}`);
+            return;
+        }
+        
+        const gestionnaireDeleguee = (e) => {
+            const cible = e.target.closest('[data-action]');
+            if (!cible) return;
+            
+            const action = cible.dataset.action;
+            const params = this.extraireParametresAction(cible);
+            
+            // Exécuter l'action si la méthode existe
+            if (typeof this[action] === 'function') {
+                e.preventDefault();
+                this[action](params, e, cible);
+            } else {
+                console.warn(`Action introuvable: ${action}`);
+            }
+        };
+        
+        element.addEventListener(evenement, gestionnaireDeleguee);
+        this.ecouteursEvenements.push({ element, evenement, gestionnaire: gestionnaireDeleguee });
+    }
+    
+    /**
+     * Extrait les paramètres d'une action depuis les data-attributes
+     * @param {HTMLElement} element - Elément avec data-attributes
+     * @returns {Object} Paramètres extraits
+     */
+    extraireParametresAction(element) {
+        const params = {};
+        
+        // Récupérer tous les data-attributes
+        Object.keys(element.dataset).forEach(key => {
+            if (key !== 'action') {
+                // Convertir les types basiques
+                let valeur = element.dataset[key];
+                
+                if (valeur === 'true') valeur = true;
+                else if (valeur === 'false') valeur = false;
+                else if (!isNaN(valeur) && valeur !== '') valeur = Number(valeur);
+                
+                params[key] = valeur;
+            }
+        });
+        
+        return params;
+    }
+    
+    /**
      * Nettoie les ressources du composant
      */
     nettoyer() {
@@ -61,6 +152,7 @@ class BaseComposant {
             element.removeEventListener(evenement, gestionnaire);
         });
         this.ecouteursEvenements = [];
+        this.actionsDelegation.clear();
     }
 }
 
@@ -562,6 +654,48 @@ class ComposantGestionCantons extends BaseComposant {
                             <div class="actions-formulaire">
                                 <button type="button" id="btn-annuler-village" class="bouton bouton-ghost">Annuler</button>
                                 <button type="submit" id="btn-sauvegarder-village" class="bouton bouton-primaire">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v11l5-5 1.41-1.41L5 17.25V21z"></path>
+                                    </svg>
+                                    Sauvegarder
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Formulaire Quartier -->
+                <div id="formulaire-quartier" class="carte formulaire-carte masque">
+                    <div class="carte-header">
+                        <h3 id="titre-formulaire-quartier">Nouveau Quartier</h3>
+                        <button id="btn-fermer-formulaire-quartier" class="bouton-fermer-modal">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="carte-body">
+                        <form id="form-quartier">
+                            <div class="groupe-champ">
+                                <label class="etiquette-champ" for="village-quartier">Village *</label>
+                                <select id="village-quartier" name="village_id" class="champ-saisie" required>
+                                    <option value="">Sélectionner un village...</option>
+                                </select>
+                                <div class="message-erreur" id="erreur-village-quartier"></div>
+                            </div>
+                            <div class="groupe-champ">
+                                <label class="etiquette-champ" for="nom-quartier">Nom du Quartier *</label>
+                                <input type="text" id="nom-quartier" name="nom" class="champ-saisie" required placeholder="Ex: Tokoin">
+                                <div class="message-erreur" id="erreur-nom-quartier"></div>
+                            </div>
+                            <div class="groupe-champ">
+                                <label class="etiquette-champ" for="description-quartier">Description</label>
+                                <textarea id="description-quartier" name="description" class="champ-saisie" rows="3" placeholder="Description optionnelle du quartier"></textarea>
+                            </div>
+                            <div class="actions-formulaire">
+                                <button type="button" id="btn-annuler-quartier" class="bouton bouton-ghost">Annuler</button>
+                                <button type="submit" id="btn-sauvegarder-quartier" class="bouton bouton-primaire">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v11l5-5 1.41-1.41L5 17.25V21z"></path>
                                     </svg>

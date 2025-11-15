@@ -1181,3 +1181,105 @@
         height: 14px;
     }
 }
+
+/* ========================================
+ * 📊 PAGINATION
+ * ======================================== */
+
+.pagination-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacement-md);
+    margin-top: var(--espacement-lg);
+    padding: var(--espacement-md);
+    background: var(--couleur-fond-secondaire);
+    border-radius: var(--rayon-bordure);
+}
+
+.pagination-info {
+    text-align: center;
+    color: var(--couleur-texte-secondaire);
+    font-size: 0.9rem;
+}
+
+.pagination-info strong {
+    color: var(--couleur-primaire);
+    font-weight: 600;
+}
+
+.pagination-controles {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--espacement-xs);
+    flex-wrap: wrap;
+}
+
+.pagination-btn,
+.pagination-btn-numero {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 36px;
+    padding: var(--espacement-xs) var(--espacement-sm);
+    border: 1px solid var(--couleur-bordure);
+    background: var(--couleur-fond);
+    color: var(--couleur-texte);
+    border-radius: var(--rayon-bordure);
+    cursor: pointer;
+    transition: all var(--transition-rapide);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.pagination-btn:hover:not(:disabled),
+.pagination-btn-numero:hover:not(.actif) {
+    background: var(--couleur-primaire);
+    color: white;
+    border-color: var(--couleur-primaire);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.pagination-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: var(--couleur-fond-secondaire);
+}
+
+.pagination-btn-numero.actif {
+    background: var(--couleur-primaire);
+    color: white;
+    border-color: var(--couleur-primaire);
+    font-weight: 600;
+    cursor: default;
+}
+
+.pagination-ellipsis {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 36px;
+    color: var(--couleur-texte-secondaire);
+    user-select: none;
+}
+
+/* Responsive pagination */
+@media (max-width: 768px) {
+    .pagination-wrapper {
+        padding: var(--espacement-sm);
+    }
+
+    .pagination-btn,
+    .pagination-btn-numero {
+        min-width: 32px;
+        height: 32px;
+        font-size: 0.85rem;
+    }
+
+    .pagination-info {
+        font-size: 0.85rem;
+    }
+}

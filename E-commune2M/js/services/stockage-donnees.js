@@ -16,6 +16,7 @@ class ServiceStockageDonnees {
             PAIEMENTS: 'paiements',
             CANTONS: 'cantons',
             VILLAGES: 'villages',
+            QUARTIERS: 'quartiers',
             TYPES_COTISATION: 'types_cotisation',
             PARAMETRES: 'parametres'
         };
@@ -92,6 +93,16 @@ class ServiceStockageDonnees {
             });
             magasinVillages.createIndex('canton_id', 'canton_id', { unique: false });
             magasinVillages.createIndex('nom', 'nom', { unique: false });
+        }
+        
+        // Magasin des quartiers
+        if (!this.baseDonnees.objectStoreNames.contains(this.magasins.QUARTIERS)) {
+            const magasinQuartiers = this.baseDonnees.createObjectStore(this.magasins.QUARTIERS, {
+                keyPath: 'id',
+                autoIncrement: true
+            });
+            magasinQuartiers.createIndex('village_id', 'village_id', { unique: false });
+            magasinQuartiers.createIndex('nom', 'nom', { unique: false });
         }
         
         // Magasin des types de cotisation

@@ -12,7 +12,7 @@ const CONFIG_APPLICATION = {
     
     // Base de données locale
     nomBaseDonnees: 'cotisations_togo_db',
-    versionBaseDonnees: 1,
+    versionBaseDonnees: 2, // V2: Ajout de la table quartiers pour structure relationnelle complète
     
     // Pagination
     elementsParPage: 25,

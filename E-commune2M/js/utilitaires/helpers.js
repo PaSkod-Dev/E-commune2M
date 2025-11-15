@@ -501,7 +501,95 @@ function creerDebounce(fonction, delai) {
 
 // Rendre les fonctions disponibles globalement
 if (typeof window !== 'undefined') {
-    window.UtilitairesTogo = {
+    /**
+     * ========================================
+     * 🔒 SÉCURITÉ & SANITIZATION
+     * ========================================
+     */
+    
+    /**
+     * Échappe les caractères HTML dangereux pour prévenir les attaques XSS
+     * @param {string} texte - Texte à échapper
+     * @returns {string} Texte sécurisé
+     */
+    function echapperHTML(texte) {
+        if (!texte) return '';
+        
+        const map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;',
+            '/': '&#x2F;'
+        };
+        
+        return String(texte).replace(/[&<>"'\/]/g, (char) => map[char]);
+    }
+    
+    /**
+     * Sanitize un objet en échappant tous ses champs de type string
+     * @param {Object} objet - Objet à sécuriser
+     * @returns {Object} Objet sécurisé
+     */
+    function securiserObjet(objet) {
+        if (!objet || typeof objet !== 'object') return objet;
+        
+        const objetSecurise = Array.isArray(objet) ? [] : {};
+        
+        for (const [cle, valeur] of Object.entries(objet)) {
+            if (typeof valeur === 'string') {
+                objetSecurise[cle] = echapperHTML(valeur);
+            } else if (typeof valeur === 'object' && valeur !== null) {
+                objetSecurise[cle] = securiserObjet(valeur);
+            } else {
+                objetSecurise[cle] = valeur;
+            }
+        }
+        
+        return objetSecurise;
+    }
+    
+    /**
+     * Valide et nettoie une URL
+     * @param {string} url - URL à valider
+     * @returns {string|null} URL sécurisée ou null si invalide
+     */
+    function validerURL(url) {
+        try {
+            const urlObj = new URL(url);
+            // Autoriser seulement http et https
+            if (urlObj.protocol === 'http:' || urlObj.protocol === 'https:') {
+                return urlObj.toString();
+            }
+        } catch {
+            return null;
+        }
+        return null;
+    }
+    
+    /**
+     * Crée un élément DOM de manière sécurisée
+     * @param {string} tag - Tag HTML
+     * @param {Object} attributs - Attributs de l'élément
+     * @param {string} contenu - Contenu texte (sera échappé)
+     * @returns {HTMLElement}
+     */
+    function creerElementSecurise(tag, attributs = {}, contenu = '') {
+        const element = document.createElement(tag);
+        
+        // Appliquer les attributs de manière sécurisée
+        for (const [cle, valeur] of Object.entries(attributs)) {
+            if (cle === 'href' || cle === 'src') {
+                const urlSecure = validerURL(valeur);
+                if (urlSecure) {
+                    element.setAttribute(cle, urlSecure);
+                }
+            } else {
+                element.setAttribute(cle, String(valeur));
+            }
+        }
+        
         formaterMontant,
         formaterDate,
         formaterNomComplet,
@@ -529,6 +617,10 @@ if (typeof window !== 'undefined') {
         recupererDuStockage,
         convertirEnCSV,
         telechargerFichier,
-        creerDebounce
+        creerDebounce,
+        echapperHTML,
+        securiserObjet,
+        validerURL,
+        creerElementSecurise
     };
 }

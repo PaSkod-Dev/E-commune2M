@@ -125,29 +125,33 @@ class ServiceClassification {
         try {
             const cotisants = await this.stockage.obtenirTous('cotisants');
             const paiements = await this.stockage.obtenirTous('paiements');
+            const quartiers = await this.stockage.rechercher('quartiers', { village_id: parseInt(villageId) });
             
-            // Grouper les cotisants par quartier dans le village sélectionné
+            // Grouper les cotisants par quartier_id dans le village sélectionné
             const cotisantsVillage = cotisants.filter(c => c.village_id === parseInt(villageId));
             const quartiersMap = new Map();
             
+            // Initialiser la map avec tous les quartiers du village
+            for (const quartier of quartiers) {
+                quartiersMap.set(quartier.id, {
+                    quartier: quartier,
+                    cotisants: [],
+                    statistiques: null,
+                    rang: 0
+                });
+            }
+            
+            // Ajouter les cotisants à leurs quartiers respectifs
             for (const cotisant of cotisantsVillage) {
-                const quartier = cotisant.quartier || 'Non spécifié';
-                
-                if (!quartiersMap.has(quartier)) {
-                    quartiersMap.set(quartier, {
-                        quartier: { nom: quartier },
-                        cotisants: [],
-                        statistiques: null,
-                        rang: 0
-                    });
+                if (cotisant.quartier_id && quartiersMap.has(cotisant.quartier_id)) {
+                    quartiersMap.get(cotisant.quartier_id).cotisants.push(cotisant);
                 }
-                
-                quartiersMap.get(quartier).cotisants.push(cotisant);
             }
             
             const classementQuartiers = [];
             
-            for (const [quartierNom, data] of quartiersMap) {
+            // Calculer les statistiques pour chaque quartier
+            for (const [quartierId, data] of quartiersMap) {
                 const paiementsQuartier = paiements.filter(p => 
                     data.cotisants.some(c => c.id === p.cotisant_id)
                 );

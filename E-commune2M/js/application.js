@@ -3,6 +3,208 @@
  * Point d'entrée de l'application
  */
 
+/**
+ * ========================================
+ * 🚨 GESTIONNAIRE D'ERREURS CENTRALISÉ
+ * ========================================
+ */
+class GestionnaireErreurs {
+    constructor() {
+        this.erreurs = [];
+        this.maxErreurs = 100;
+        this.configurerGestionGlobale();
+    }
+    
+    /**
+     * Configure la gestion globale des erreurs
+     */
+    configurerGestionGlobale() {
+        // Capturer les erreurs JavaScript non gérées
+        window.addEventListener('error', (event) => {
+            this.capturer(event.error, 'Erreur globale', {
+                fichier: event.filename,
+                ligne: event.lineno,
+                colonne: event.colno
+            });
+        });
+        
+        // Capturer les rejets de promesses non gérés
+        window.addEventListener('unhandledrejection', (event) => {
+            this.capturer(event.reason, 'Promesse non gérée', {
+                promesse: event.promise
+            });
+        });
+    }
+    
+    /**
+     * Capture une erreur
+     * @param {Error} erreur - L'erreur à capturer
+     * @param {string} contexte - Contexte de l'erreur
+     * @param {Object} metadonnees - Métadonnées supplémentaires
+     */
+    capturer(erreur, contexte = 'Inconnu', metadonnees = {}) {
+        const erreurFormatee = {
+            id: this.genererIdErreur(),
+            timestamp: new Date().toISOString(),
+            contexte,
+            message: erreur?.message || String(erreur),
+            stack: erreur?.stack || '',
+            metadonnees,
+            niveau: this.determinerNiveau(erreur)
+        };
+        
+        // Enregistrer l'erreur
+        this.enregistrer(erreurFormatee);
+        
+        // Logger dans la console
+        this.loggerConsole(erreurFormatee);
+        
+        // Afficher à l'utilisateur si critique
+        if (erreurFormatee.niveau === 'critique' || erreurFormatee.niveau === 'erreur') {
+            this.afficherNotificationUtilisateur(erreurFormatee);
+        }
+        
+        return erreurFormatee.id;
+    }
+    
+    /**
+     * Enregistre l'erreur dans l'historique
+     * @param {Object} erreur - Erreur formatée
+     */
+    enregistrer(erreur) {
+        this.erreurs.unshift(erreur);
+        
+        // Limiter la taille de l'historique
+        if (this.erreurs.length > this.maxErreurs) {
+            this.erreurs = this.erreurs.slice(0, this.maxErreurs);
+        }
+        
+        // Sauvegarder dans localStorage pour analyse
+        try {
+            const erreursRecentes = this.erreurs.slice(0, 20);
+            localStorage.setItem('erreurs_recentes', JSON.stringify(erreursRecentes));
+        } catch (e) {
+            console.warn('Impossible de sauvegarder les erreurs:', e);
+        }
+    }
+    
+    /**
+     * Logger l'erreur dans la console
+     * @param {Object} erreur - Erreur formatée
+     */
+    loggerConsole(erreur) {
+        const style = this.obtenirStyleConsole(erreur.niveau);
+        console.group(`%c[${erreur.niveau.toUpperCase()}] ${erreur.contexte}`, style);
+        console.error('Message:', erreur.message);
+        console.error('Timestamp:', erreur.timestamp);
+        if (erreur.stack) {
+            console.error('Stack:', erreur.stack);
+        }
+        if (Object.keys(erreur.metadonnees).length > 0) {
+            console.error('Métadonnées:', erreur.metadonnees);
+        }
+        console.groupEnd();
+    }
+    
+    /**
+     * Affiche une notification à l'utilisateur
+     * @param {Object} erreur - Erreur formatée
+     */
+    afficherNotificationUtilisateur(erreur) {
+        const message = this.obtenirMessageUtilisateur(erreur);
+        const type = erreur.niveau === 'critique' ? 'erreur' : 'avertissement';
+        
+        if (window.UtilitairesTogo && window.UtilitairesTogo.afficherNotification) {
+            window.UtilitairesTogo.afficherNotification(message, type, 5000);
+        } else {
+            alert(message);
+        }
+    }
+    
+    /**
+     * Détermine le niveau de sévérité de l'erreur
+     * @param {Error} erreur - L'erreur
+     * @returns {string} Niveau (info, avertissement, erreur, critique)
+     */
+    determinerNiveau(erreur) {
+        if (!erreur) return 'info';
+        
+        const message = erreur.message || '';
+        
+        if (message.includes('critique') || message.includes('fatal')) {
+            return 'critique';
+        }
+        if (message.includes('réseau') || message.includes('timeout')) {
+            return 'avertissement';
+        }
+        return 'erreur';
+    }
+    
+    /**
+     * Obtient le message à afficher à l'utilisateur
+     * @param {Object} erreur - Erreur formatée
+     * @returns {string} Message utilisateur
+     */
+    obtenirMessageUtilisateur(erreur) {
+        const messagesPersonnalises = {
+            'Erreur globale': 'Une erreur inattendue s\'est produite. Veuillez réessayer.',
+            'Promesse non gérée': 'Une opération asynchrone a échoué.',
+            'Initialisation': 'Erreur lors du démarrage de l\'application.',
+            'Stockage': 'Erreur lors de l\'accès aux données.',
+            'Réseau': 'Problème de connexion réseau.'
+        };
+        
+        return messagesPersonnalises[erreur.contexte] || 
+               `Une erreur s'est produite: ${erreur.message}`;
+    }
+    
+    /**
+     * Obtient le style CSS pour la console
+     * @param {string} niveau - Niveau de sévérité
+     * @returns {string} Style CSS
+     */
+    obtenirStyleConsole(niveau) {
+        const styles = {
+            info: 'color: #2563EB; font-weight: bold;',
+            avertissement: 'color: #D97706; font-weight: bold;',
+            erreur: 'color: #DC2626; font-weight: bold;',
+            critique: 'color: #fff; background: #DC2626; padding: 2px 6px; font-weight: bold;'
+        };
+        return styles[niveau] || styles.info;
+    }
+    
+    /**
+     * Génère un ID unique pour l'erreur
+     * @returns {string} ID unique
+     */
+    genererIdErreur() {
+        return `err_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    }
+    
+    /**
+     * Obtient l'historique des erreurs
+     * @param {number} limite - Nombre d'erreurs à récupérer
+     * @returns {Array} Liste des erreurs
+     */
+    obtenirHistorique(limite = 10) {
+        return this.erreurs.slice(0, limite);
+    }
+    
+    /**
+     * Nettoie l'historique des erreurs
+     */
+    nettoyer() {
+        this.erreurs = [];
+        localStorage.removeItem('erreurs_recentes');
+    }
+}
+
+// Instance globale du gestionnaire d'erreurs
+const gestionnaireErreurs = new GestionnaireErreurs();
+if (typeof window !== 'undefined') {
+    window.GestionnaireErreurs = gestionnaireErreurs;
+}
+
 class ApplicationPrincipale {
     constructor() {
         this.initialise = false;
