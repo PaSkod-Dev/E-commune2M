@@ -257,6 +257,13 @@
     color: var(--couleur-primaire);
 }
 
+/* Taille fixe pour les icônes des actions (évite qu’elles disparaissent selon le zoom) */
+.actions-tableau svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
 /* === FORMULAIRES === */
 .groupe-champ {
     margin-bottom: var(--espacement-lg);
@@ -995,39 +1002,69 @@ body.modal-open {
     overflow-y: auto;
 }
 
-
-
-.formulaire-carte .carte-header {
-    background: linear-gradient(135deg, var(--couleur-primaire) 0%, var(--couleur-primaire-foncee) 100%);
-    color: white;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+/* Layout villages / quartiers dans la carte de détails canton */
+.conteneur-villages-quartiers {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1.5fr);
+    gap: var(--espacement-xl);
+    align-items: flex-start;
 }
 
-.formulaire-carte .carte-header h3 {
-    margin: 0;
-    font-size: 1.25rem;
-    font-weight: 600;
-}
-
-/* Actions de formulaire */
-.actions-formulaire {
+.bloc-villages,
+.bloc-quartiers {
     display: flex;
+    flex-direction: column;
     gap: var(--espacement-md);
-    justify-content: flex-end;
-    margin-top: var(--espacement-xl);
-    padding-top: var(--espacement-lg);
-    border-top: 1px solid var(--couleur-bordure);
 }
 
-/* Barre de recherche */
+.contexte-hierarchie {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacement-xs);
+    margin-bottom: var(--espacement-xs);
+}
+
+.badge-hierarchie {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--espacement-xs);
+    padding: var(--espacement-xs) var(--espacement-sm);
+    border-radius: var(--rayon-bordure-complet);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    background-color: var(--couleur-neutre-100);
+    color: var(--couleur-texte-secondaire);
+}
+
+.badge-hierarchie.niveau-quartier {
+    background-color: #ecfeff;
+    color: var(--couleur-accent);
+}
+
+.chemin-hierarchie {
+    font-size: 0.9rem;
+    color: var(--couleur-texte-secondaire);
+}
+
+/* Ligne de village sélectionné (lié aux quartiers affichés) */
+.ligne-village-selectionnee {
+    background: linear-gradient(135deg, #eff6ff 0%, #e0f2fe 100%);
+    box-shadow: 0 0 0 1px var(--couleur-primaire-claire);
+}
+
+.ligne-village-selectionnee td:first-child {
+    border-left: 3px solid var(--couleur-accent);
+}
+
+/* Barre de recherche dans la liste des cantons */
 .barre-recherche {
     position: relative;
-    max-width: 300px;
+    max-width: 320px;
 }
 
-.barre-recherche input {
+.barre-recherche .champ-saisie {
     padding-right: 40px;
 }
 
@@ -1040,114 +1077,6 @@ body.modal-open {
     height: 18px;
     color: var(--couleur-texte-secondaire);
     pointer-events: none;
-}
-
-/* Tableaux avec actions */
-.tableau {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.95rem;
-}
-
-.tableau thead {
-    background: linear-gradient(135deg, var(--couleur-neutre-100) 0%, var(--couleur-neutre-200) 100%);
-}
-
-.tableau th {
-    padding: var(--espacement-md) var(--espacement-lg);
-    text-align: left;
-    font-weight: 600;
-    color: var(--couleur-texte);
-    font-size: 0.875rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    border-bottom: 2px solid var(--couleur-bordure);
-}
-
-.tableau td {
-    padding: var(--espacement-md) var(--espacement-lg);
-    border-bottom: 1px solid var(--couleur-bordure);
-    vertical-align: middle;
-}
-
-.tableau tbody tr {
-    transition: all var(--transition-rapide);
-}
-
-.tableau tbody tr:hover {
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-}
-
-.tableau tbody tr:nth-child(even) {
-    background: rgba(248, 250, 252, 0.3);
-}
-
-.tableau tbody tr:nth-child(even):hover {
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-}
-
-/* Actions dans les tableaux */
-.actions-tableau {
-    display: flex;
-    gap: var(--espacement-xs);
-    justify-content: center;
-}
-
-.bouton-action-tableau {
-    padding: var(--espacement-xs);
-    border: none;
-    background: none;
-    cursor: pointer;
-    border-radius: var(--rayon-bordure);
-    transition: all var(--transition-rapide);
-    color: var(--couleur-texte-secondaire);
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.bouton-action-tableau:hover {
-    background-color: var(--couleur-primaire);
-    color: white;
-    transform: scale(1.1);
-}
-
-.bouton-action-tableau svg {
-    width: 16px;
-    height: 16px;
-}
-
-/* Badges dans les tableaux */
-.badge {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--espacement-xs);
-    padding: var(--espacement-xs) var(--espacement-sm);
-    border-radius: var(--rayon-bordure-complet);
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.badge-info {
-    background-color: var(--couleur-info-claire);
-    color: var(--couleur-info);
-}
-
-/* Messages d'état améliorés */
-.message-vide {
-    text-align: center;
-    padding: var(--espacement-xl);
-    color: var(--couleur-texte-secondaire);
-    font-style: italic;
-    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-    border-radius: var(--rayon-bordure);
-    border: 2px dashed var(--couleur-bordure);
 }
 
 /* Responsive pour les interfaces de gestion */
@@ -1185,6 +1114,10 @@ body.modal-open {
     .actions-tableau {
         flex-direction: column;
         gap: var(--espacement-xs);
+    }
+
+    .conteneur-villages-quartiers {
+        display: block;
     }
 }
 

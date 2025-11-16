@@ -754,6 +754,9 @@ class ComposantGestionCantons extends BaseComposant {
                         <div id="liste-villages" class="tableau-conteneur">
                             <p class="message-vide">Sélectionnez un canton pour voir ses villages</p>
                         </div>
+                        <div id="liste-quartiers" class="tableau-conteneur">
+                            <p class="message-vide">Sélectionnez un village pour voir ses quartiers</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -995,7 +998,18 @@ class ComposantGestionCantons extends BaseComposant {
         const canton = this.etat.cantons.find(c => c.id === cantonId);
         if (!canton) return;
 
+        // Met à jour le canton courant
         this.etat.cantonSelectionne = canton;
+
+        // Réinitialise la sélection de village et les quartiers
+        this.etat.villageSelectionne = null;
+        this.etat.quartiers = [];
+
+        const listeQuartiers = document.getElementById('liste-quartiers');
+        if (listeQuartiers) {
+            listeQuartiers.innerHTML = '<p class="message-vide">Sélectionnez un village pour voir ses quartiers</p>';
+        }
+
 
         // Afficher la section des détails
         const detailsCanton = document.getElementById('details-canton');
@@ -1155,11 +1169,84 @@ class ComposantGestionCantons extends BaseComposant {
                                     <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
                                 </svg>
                             </button>
+                            <button class="bouton-action-tableau" onclick="composantCantons.voirQuartiersVillage(${village.id})" title="Voir les quartiers de ce village">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                            </button>
                             <button class="bouton-action-tableau" onclick="composantCantons.afficherFormulaireQuartier(${village.id})" title="Ajouter un quartier à ce village">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <circle cx="12" cy="12" r="10"></circle>
                                     <line x1="12" y1="8" x2="12" y2="16"></line>
                                     <line x1="8" y1="12" x2="16" y2="12"></line>
+                                </svg>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+
+        html += '</tbody></table>';
+        conteneur.innerHTML = html;
+    }
+
+    async chargerQuartiers(villageId) {
+        try {
+            const quartiers = await window.StockageDonnees.rechercher('quartiers', { village_id: parseInt(villageId) });
+            this.etat.quartiers = quartiers;
+            this.afficherQuartiers(quartiers);
+        } catch (erreur) {
+            console.error('Erreur lors du chargement des quartiers:', erreur);
+            this.afficherErreur('Erreur lors du chargement des quartiers');
+        }
+    }
+
+    afficherQuartiers(quartiers) {
+        const conteneur = document.getElementById('liste-quartiers');
+        if (!conteneur) return;
+
+        if (!this.etat.villageSelectionne) {
+            conteneur.innerHTML = '<p class="message-vide">Sélectionnez un village pour voir ses quartiers</p>';
+            return;
+        }
+
+        if (!quartiers || quartiers.length === 0) {
+            conteneur.innerHTML = `<p class="message-vide">Aucun quartier dans le village ${this.etat.villageSelectionne.nom}. Créez le premier quartier.</p>`;
+            return;
+        }
+
+        let html = `
+            <h4>Quartiers du village ${this.etat.villageSelectionne.nom}</h4>
+            <table class="tableau">
+                <thead>
+                    <tr>
+                        <th>Nom</th>
+                        <th>Description</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        quartiers.forEach(quartier => {
+            html += `
+                <tr data-quartier-id="${quartier.id}">
+                    <td><strong>${quartier.nom}</strong></td>
+                    <td>${quartier.description || '-'}</td>
+                    <td>
+                        <div class="actions-tableau">
+                            <button class="bouton-action-tableau" onclick="composantCantons.modifierQuartier(${quartier.id})" title="Modifier ce quartier">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"></path>
+                                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                </svg>
+                            </button>
+                            <button class="bouton-action-tableau" onclick="composantCantons.supprimerQuartier(${quartier.id})" title="Supprimer ce quartier">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="3,6 5,6 21,6"></polyline>
+                                    <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
                                 </svg>
                             </button>
                         </div>
@@ -1274,9 +1361,57 @@ class ComposantGestionCantons extends BaseComposant {
         }
     }
 
+    voirQuartiersVillage(villageId) {
+        // Si on clique à nouveau sur le même village => on masque les quartiers (toggle OFF)
+        if (this.etat.villageSelectionne && this.etat.villageSelectionne.id === villageId) {
+            this.etat.villageSelectionne = null;
+            this.etat.quartiers = [];
+
+            // Retirer le surlignage sur toutes les lignes de villages
+            const lignes = document.querySelectorAll('#liste-villages table tbody tr');
+            lignes.forEach(tr => tr.classList.remove('ligne-village-selectionnee'));
+
+            const listeQuartiers = document.getElementById('liste-quartiers');
+            if (listeQuartiers) {
+                listeQuartiers.innerHTML = '<p class="message-vide">Sélectionnez un village pour voir ses quartiers</p>';
+            }
+
+            return;
+        }
+
+        // Sinon, on sélectionne ce village (toggle ON)
+        const village = this.etat.villages.find(v => v.id === villageId);
+        if (!village) return;
+
+        this.etat.villageSelectionne = village;
+        this.etat.quartiers = [];
+
+        // Surligner la ligne du village sélectionné
+        const lignes = document.querySelectorAll('#liste-villages table tbody tr');
+        lignes.forEach(tr => tr.classList.remove('ligne-village-selectionnee'));
+        const ligneSelectionnee = document.querySelector(`#liste-villages table tbody tr[data-village-id="${villageId}"]`);
+        if (ligneSelectionnee) {
+            ligneSelectionnee.classList.add('ligne-village-selectionnee');
+        }
+
+        const listeQuartiers = document.getElementById('liste-quartiers');
+        if (listeQuartiers) {
+            listeQuartiers.innerHTML = '<p class="message-vide">Chargement des quartiers...</p>';
+        }
+
+        // Charger et afficher les quartiers de ce village
+        this.chargerQuartiers(villageId);
+    }
     afficherFormulaireQuartier(villageId = null) {
         this.etat.modeEditionQuartier = false;
         this.etat.quartierSelectionne = null;
+
+        if (villageId) {
+            const village = this.etat.villages.find(v => v.id === villageId);
+            if (village) {
+                this.etat.villageSelectionne = village;
+            }
+        }
 
         // Fermer les formulaires canton et village avant d'ouvrir celui du quartier
         this.masquerFormulaire();
@@ -1328,10 +1463,61 @@ class ComposantGestionCantons extends BaseComposant {
                 await window.StockageDonnees.ajouter('quartiers', quartier);
             }
             this.masquerFormulaireQuartier();
+
+            if (this.etat.villageSelectionne) {
+                await this.chargerQuartiers(this.etat.villageSelectionne.id);
+            }
+
             this.afficherSucces(this.etat.modeEditionQuartier ? 'Quartier modifié avec succès' : 'Quartier créé avec succès');
         } catch (erreur) {
             console.error('Erreur lors de la sauvegarde du quartier:', erreur);
             this.afficherErreur('Erreur lors de la sauvegarde du quartier');
+        }
+    }
+
+    modifierQuartier(quartierId) {
+        const quartier = this.etat.quartiers.find(q => q.id === quartierId);
+        if (!quartier) return;
+
+        const village = this.etat.villages.find(v => v.id === quartier.village_id);
+        if (village) {
+            this.etat.villageSelectionne = village;
+        }
+
+        this.etat.modeEditionQuartier = true;
+        this.etat.quartierSelectionne = quartier;
+
+        // Fermer les formulaires canton et village avant d'ouvrir celui du quartier
+        this.masquerFormulaire();
+        this.masquerFormulaireVillage();
+
+        const selectVillage = document.getElementById('village-quartier');
+        if (selectVillage) {
+            this.chargerVillagesFormulaireQuartier();
+            selectVillage.value = quartier.village_id;
+        }
+
+        document.getElementById('titre-formulaire-quartier').textContent = 'Modifier Quartier';
+        document.getElementById('nom-quartier').value = quartier.nom;
+        document.getElementById('description-quartier').value = quartier.description || '';
+        document.getElementById('formulaire-quartier').classList.remove('masque');
+        document.body.classList.add('modal-open');
+    }
+
+    async supprimerQuartier(quartierId) {
+        if (!confirm('Êtes-vous sûr de vouloir supprimer ce quartier ?')) return;
+
+        try {
+            await window.StockageDonnees.supprimer('quartiers', quartierId);
+
+            if (this.etat.villageSelectionne) {
+                await this.chargerQuartiers(this.etat.villageSelectionne.id);
+            }
+
+            this.afficherSucces('Quartier supprimé avec succès');
+        } catch (erreur) {
+            console.error('Erreur lors de la suppression du quartier:', erreur);
+            this.afficherErreur('Erreur lors de la suppression du quartier');
         }
     }
 
