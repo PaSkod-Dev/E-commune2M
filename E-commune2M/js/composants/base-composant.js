@@ -11,21 +11,21 @@ class BaseComposant {
         this.ecouteursEvenements = [];
         this.actionsDelegation = new Map(); // Pour l'event delegation
     }
-    
+
     /**
      * Méthode à implémenter par les composants enfants
      */
     async rendre() {
         throw new Error('La méthode rendre() doit être implémentée par le composant enfant');
     }
-    
+
     /**
      * Initialise le composant après le rendu
      */
     async initialiser() {
         // Méthode optionnelle à surcharger
     }
-    
+
     /**
      * Met à jour l'état du composant
      */
@@ -33,7 +33,7 @@ class BaseComposant {
         this.etat = { ...this.etat, ...nouvelEtat };
         this.reRendre();
     }
-    
+
     /**
      * Re-rend le composant
      */
@@ -44,7 +44,7 @@ class BaseComposant {
             await this.initialiser();
         }
     }
-    
+
     /**
      * Ajoute un écouteur d'événement
      */
@@ -52,7 +52,7 @@ class BaseComposant {
         element.addEventListener(evenement, gestionnaire);
         this.ecouteursEvenements.push({ element, evenement, gestionnaire });
     }
-    
+
     /**
      * Event Delegation - Configure un écouteur délégué sur un conteneur parent
      * @param {HTMLElement|string} conteneur - Elément parent ou sélecteur
@@ -61,15 +61,15 @@ class BaseComposant {
      * @param {Function} gestionnaire - Fonction gestionnaire
      */
     deleguerEvenement(conteneur, selecteur, evenement, gestionnaire) {
-        const element = typeof conteneur === 'string' 
-            ? document.querySelector(conteneur) 
+        const element = typeof conteneur === 'string'
+            ? document.querySelector(conteneur)
             : conteneur;
-        
+
         if (!element) {
             console.warn(`Conteneur introuvable pour la délégation: ${conteneur}`);
             return;
         }
-        
+
         const gestionnaireDeleguee = (e) => {
             // Trouver l'élément correspondant au sélecteur
             const cible = e.target.closest(selecteur);
@@ -78,33 +78,33 @@ class BaseComposant {
                 gestionnaire.call(this, e, cible);
             }
         };
-        
+
         element.addEventListener(evenement, gestionnaireDeleguee);
         this.ecouteursEvenements.push({ element, evenement, gestionnaire: gestionnaireDeleguee });
     }
-    
+
     /**
      * Configure des actions déléguées via data-attributes
      * @param {HTMLElement|string} conteneur - Elément parent ou sélecteur
      * @param {string} evenement - Type d'événement (par défaut 'click')
      */
     configurerActionsDelegation(conteneur, evenement = 'click') {
-        const element = typeof conteneur === 'string' 
-            ? document.querySelector(conteneur) 
+        const element = typeof conteneur === 'string'
+            ? document.querySelector(conteneur)
             : conteneur;
-        
+
         if (!element) {
             console.warn(`Conteneur introuvable pour les actions déléguées: ${conteneur}`);
             return;
         }
-        
+
         const gestionnaireDeleguee = (e) => {
             const cible = e.target.closest('[data-action]');
             if (!cible) return;
-            
+
             const action = cible.dataset.action;
             const params = this.extraireParametresAction(cible);
-            
+
             // Exécuter l'action si la méthode existe
             if (typeof this[action] === 'function') {
                 e.preventDefault();
@@ -113,11 +113,11 @@ class BaseComposant {
                 console.warn(`Action introuvable: ${action}`);
             }
         };
-        
+
         element.addEventListener(evenement, gestionnaireDeleguee);
         this.ecouteursEvenements.push({ element, evenement, gestionnaire: gestionnaireDeleguee });
     }
-    
+
     /**
      * Extrait les paramètres d'une action depuis les data-attributes
      * @param {HTMLElement} element - Elément avec data-attributes
@@ -125,24 +125,24 @@ class BaseComposant {
      */
     extraireParametresAction(element) {
         const params = {};
-        
+
         // Récupérer tous les data-attributes
         Object.keys(element.dataset).forEach(key => {
             if (key !== 'action') {
                 // Convertir les types basiques
                 let valeur = element.dataset[key];
-                
+
                 if (valeur === 'true') valeur = true;
                 else if (valeur === 'false') valeur = false;
                 else if (!isNaN(valeur) && valeur !== '') valeur = Number(valeur);
-                
+
                 params[key] = valeur;
             }
         });
-        
+
         return params;
     }
-    
+
     /**
      * Nettoie les ressources du composant
      */
@@ -361,35 +361,35 @@ class ComposantStatistiques extends BaseComposant {
             </div>
         `;
     }
-    
+
     async initialiser() {
         await this.configurerEvenements();
         await this.chargerCantons();
         await this.actualiserClassement();
     }
-    
+
     async configurerEvenements() {
         const typeSelect = document.getElementById('type-classement');
         const actualiserBtn = document.getElementById('actualiser-classement');
-        
+
         if (typeSelect) {
             typeSelect.addEventListener('change', (e) => {
                 this.gererChangementType(e.target.value);
             });
         }
-        
+
         if (actualiserBtn) {
             actualiserBtn.addEventListener('click', () => {
                 this.actualiserClassement();
             });
         }
     }
-    
+
     async chargerCantons() {
         try {
             const cantons = await window.StockageDonnees.obtenirTous('cantons');
             const cantonSelect = document.getElementById('canton-selection');
-            
+
             if (cantonSelect) {
                 cantonSelect.innerHTML = '<option value="">Sélectionner un canton...</option>';
                 cantons.forEach(canton => {
@@ -398,7 +398,7 @@ class ComposantStatistiques extends BaseComposant {
                     option.textContent = canton.nom;
                     cantonSelect.appendChild(option);
                 });
-                
+
                 // Écouter les changements de canton pour charger les villages
                 cantonSelect.addEventListener('change', (e) => {
                     this.chargerVillages(e.target.value);
@@ -409,20 +409,20 @@ class ComposantStatistiques extends BaseComposant {
             console.error('Erreur lors du chargement des cantons:', erreur);
         }
     }
-    
+
     async chargerVillages(cantonId) {
         try {
             const villageSelect = document.getElementById('village-selection');
-            
+
             if (!villageSelect || !cantonId) {
                 if (villageSelect) {
                     villageSelect.innerHTML = '<option value="">Sélectionner un village...</option>';
                 }
                 return;
             }
-            
+
             const villages = await window.StockageDonnees.rechercher('villages', { canton_id: parseInt(cantonId) });
-            
+
             villageSelect.innerHTML = '<option value="">Sélectionner un village...</option>';
             villages.forEach(village => {
                 const option = document.createElement('option');
@@ -430,45 +430,45 @@ class ComposantStatistiques extends BaseComposant {
                 option.textContent = village.nom;
                 villageSelect.appendChild(option);
             });
-            
+
             // Écouter les changements de village
             villageSelect.addEventListener('change', () => {
                 this.actualiserClassement();
             });
-            
+
         } catch (erreur) {
             console.error('Erreur lors du chargement des villages:', erreur);
         }
     }
-    
+
     gererChangementType(type) {
         const selecteurCanton = document.getElementById('selecteur-canton');
         const selecteurVillage = document.getElementById('selecteur-village');
-        
+
         // Réinitialiser les sélecteurs
         selecteurCanton.classList.add('masque');
         selecteurVillage.classList.add('masque');
-        
+
         if (type === 'villages') {
             selecteurCanton.classList.remove('masque');
         } else if (type === 'quartiers') {
             selecteurCanton.classList.remove('masque');
             selecteurVillage.classList.remove('masque');
         }
-        
+
         this.actualiserClassement();
     }
-    
+
     async actualiserClassement() {
         try {
             const contenu = document.getElementById('contenu-classement');
             const type = document.getElementById('type-classement').value;
             const critere = document.getElementById('critere-classement').value;
-            
+
             contenu.innerHTML = '<div class="spinner"></div><p>Chargement...</p>';
-            
+
             let donnees;
-            
+
             if (type === 'cantons') {
                 donnees = await window.ServiceClassification.obtenirClassementParCanton(critere, 'desc');
             } else if (type === 'villages') {
@@ -481,7 +481,7 @@ class ComposantStatistiques extends BaseComposant {
             } else if (type === 'quartiers') {
                 const cantonId = document.getElementById('canton-selection').value;
                 const villageId = document.getElementById('village-selection').value;
-                
+
                 if (!cantonId) {
                     contenu.innerHTML = '<p class="message-vide">Veuillez sélectionner un canton</p>';
                     return;
@@ -490,29 +490,29 @@ class ComposantStatistiques extends BaseComposant {
                     contenu.innerHTML = '<p class="message-vide">Veuillez sélectionner un village</p>';
                     return;
                 }
-                
+
                 donnees = await window.ServiceClassification.obtenirClassementParQuartier(parseInt(villageId), critere, 'desc');
             }
-            
+
             this.afficherClassement(donnees, type);
-            
+
         } catch (erreur) {
             console.error('Erreur:', erreur);
             document.getElementById('contenu-classement').innerHTML = '<p>Erreur lors du chargement</p>';
         }
     }
-    
+
     afficherClassement(donnees, type) {
         const contenu = document.getElementById('contenu-classement');
-        
+
         if (!donnees || donnees.length === 0) {
             contenu.innerHTML = '<p>Aucune donnée disponible</p>';
             return;
         }
-        
+
         let html = '<table class="tableau-moderne"><thead><tr>';
         html += '<th>Rang</th>';
-        
+
         if (type === 'cantons') {
             html += '<th>Canton</th>';
         } else if (type === 'villages') {
@@ -520,10 +520,10 @@ class ComposantStatistiques extends BaseComposant {
         } else if (type === 'quartiers') {
             html += '<th>Quartier</th>';
         }
-        
+
         html += '<th>Cotisants</th><th>Montant Total</th><th>Participation</th>';
         html += '</tr></thead><tbody>';
-        
+
         donnees.forEach(item => {
             let nom;
             if (type === 'cantons') {
@@ -533,9 +533,9 @@ class ComposantStatistiques extends BaseComposant {
             } else if (type === 'quartiers') {
                 nom = item.quartier.nom;
             }
-            
+
             const badge = item.rang <= 3 ? `badge-rang-${item.rang}` : 'badge-rang';
-            
+
             html += `<tr>
                 <td><span class="badge ${badge}">${item.rang}</span></td>
                 <td><strong>${nom}</strong></td>
@@ -544,7 +544,7 @@ class ComposantStatistiques extends BaseComposant {
                 <td>${item.statistiques.taux_participation}%</td>
             </tr>`;
         });
-        
+
         html += '</tbody></table>';
         contenu.innerHTML = html;
     }
@@ -556,8 +556,13 @@ class ComposantGestionCantons extends BaseComposant {
         this.etat = {
             cantons: [],
             villages: [],
+            quartiers: [],
             cantonSelectionne: null,
+            villageSelectionne: null,
+            quartierSelectionne: null,
             modeEdition: false,
+            modeEditionVillage: false,
+            modeEditionQuartier: false,
             formulaireVisible: false
         };
     }
@@ -573,7 +578,7 @@ class ComposantGestionCantons extends BaseComposant {
                         </svg>
                         Gestion des Cantons et Villages
                     </h1>
-                    <button id="btn-nouveau-canton" class="bouton bouton-primaire">
+                    <button id="btn-nouveau-canton" class="bouton bouton-primaire" title="Créer un nouveau canton">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="12" cy="12" r="10"></circle>
                             <line x1="12" y1="8" x2="12" y2="16"></line>
@@ -584,125 +589,131 @@ class ComposantGestionCantons extends BaseComposant {
                 </div>
 
                 <!-- Formulaire Canton -->
-                <div id="formulaire-canton" class="carte formulaire-carte masque">
-                    <div class="carte-header">
-                        <h3 id="titre-formulaire">Nouveau Canton</h3>
-                        <button id="btn-fermer-formulaire" class="bouton-fermer-modal">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <line x1="18" y1="6" x2="6" y2="18"></line>
-                                <line x1="6" y1="6" x2="18" y2="18"></line>
-                            </svg>
-                        </button>
-                    </div>
-                    <div class="carte-body">
-                        <form id="form-canton">
-                            <div class="groupe-champ">
-                                <label class="etiquette-champ" for="nom-canton">Nom du Canton *</label>
-                                <input type="text" id="nom-canton" name="nom" class="champ-saisie" required placeholder="Ex: Golfe">
-                                <div class="message-erreur" id="erreur-nom"></div>
-                            </div>
-                            <div class="groupe-champ">
-                                <label class="etiquette-champ" for="description-canton">Description</label>
-                                <textarea id="description-canton" name="description" class="champ-saisie" rows="3" placeholder="Description optionnelle du canton"></textarea>
-                            </div>
-                            <div class="actions-formulaire">
-                                <button type="button" id="btn-annuler" class="bouton bouton-ghost">Annuler</button>
-                                <button type="submit" id="btn-sauvegarder" class="bouton bouton-primaire">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v11l5-5 1.41-1.41L5 17.25V21z"></path>
-                                    </svg>
-                                    Sauvegarder
-                                </button>
-                            </div>
-                        </form>
+                <div id="formulaire-canton" class="overlay-modal masque">
+                    <div class="modal formulaire-carte">
+                        <div class="carte-header">
+                            <h3 id="titre-formulaire">Nouveau Canton</h3>
+                            <button id="btn-fermer-formulaire" class="bouton-fermer-modal">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="carte-body">
+                            <form id="form-canton">
+                                <div class="groupe-champ">
+                                    <label class="etiquette-champ" for="nom-canton">Nom du Canton *</label>
+                                    <input type="text" id="nom-canton" name="nom" class="champ-saisie" required placeholder="Ex: Golfe">
+                                    <div class="message-erreur" id="erreur-nom"></div>
+                                </div>
+                                <div class="groupe-champ">
+                                    <label class="etiquette-champ" for="description-canton">Description</label>
+                                    <textarea id="description-canton" name="description" class="champ-saisie" rows="3" placeholder="Description optionnelle du canton"></textarea>
+                                </div>
+                                <div class="actions-formulaire">
+                                    <button type="button" id="btn-annuler" class="bouton bouton-ghost">Annuler</button>
+                                    <button type="submit" id="btn-sauvegarder" class="bouton bouton-primaire">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v11l5-5 1.41-1.41L5 17.25V21z"></path>
+                                        </svg>
+                                        Sauvegarder
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Formulaire Village -->
-                <div id="formulaire-village" class="carte formulaire-carte masque">
-                    <div class="carte-header">
-                        <h3 id="titre-formulaire-village">Nouveau Village</h3>
-                        <button id="btn-fermer-formulaire-village" class="bouton-fermer-modal">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <line x1="18" y1="6" x2="6" y2="18"></line>
-                                <line x1="6" y1="6" x2="18" y2="18"></line>
-                            </svg>
-                        </button>
-                    </div>
-                    <div class="carte-body">
-                        <form id="form-village">
-                            <div class="groupe-champ">
-                                <label class="etiquette-champ" for="canton-village">Canton *</label>
-                                <select id="canton-village" name="canton_id" class="champ-saisie" required>
-                                    <option value="">Sélectionner un canton...</option>
-                                </select>
-                                <div class="message-erreur" id="erreur-canton-village"></div>
-                            </div>
-                            <div class="groupe-champ">
-                                <label class="etiquette-champ" for="nom-village">Nom du Village *</label>
-                                <input type="text" id="nom-village" name="nom" class="champ-saisie" required placeholder="Ex: Bè">
-                                <div class="message-erreur" id="erreur-nom-village"></div>
-                            </div>
-                            <div class="groupe-champ">
-                                <label class="etiquette-champ" for="population-village">Population (optionnel)</label>
-                                <input type="number" id="population-village" name="population" class="champ-saisie" min="0" placeholder="Ex: 5000">
-                            </div>
-                            <div class="groupe-champ">
-                                <label class="etiquette-champ" for="description-village">Description</label>
-                                <textarea id="description-village" name="description" class="champ-saisie" rows="3" placeholder="Description optionnelle du village"></textarea>
-                            </div>
-                            <div class="actions-formulaire">
-                                <button type="button" id="btn-annuler-village" class="bouton bouton-ghost">Annuler</button>
-                                <button type="submit" id="btn-sauvegarder-village" class="bouton bouton-primaire">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v11l5-5 1.41-1.41L5 17.25V21z"></path>
-                                    </svg>
-                                    Sauvegarder
-                                </button>
-                            </div>
-                        </form>
+                <div id="formulaire-village" class="overlay-modal masque">
+                    <div class="modal formulaire-carte">
+                        <div class="carte-header">
+                            <h3 id="titre-formulaire-village">Nouveau Village</h3>
+                            <button id="btn-fermer-formulaire-village" class="bouton-fermer-modal">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="carte-body">
+                            <form id="form-village">
+                                <div class="groupe-champ">
+                                    <label class="etiquette-champ" for="canton-village">Canton *</label>
+                                    <select id="canton-village" name="canton_id" class="champ-saisie" required>
+                                        <option value="">Sélectionner un canton...</option>
+                                    </select>
+                                    <div class="message-erreur" id="erreur-canton-village"></div>
+                                </div>
+                                <div class="groupe-champ">
+                                    <label class="etiquette-champ" for="nom-village">Nom du Village *</label>
+                                    <input type="text" id="nom-village" name="nom" class="champ-saisie" required placeholder="Ex: Bè">
+                                    <div class="message-erreur" id="erreur-nom-village"></div>
+                                </div>
+                                <div class="groupe-champ">
+                                    <label class="etiquette-champ" for="population-village">Population (optionnel)</label>
+                                    <input type="number" id="population-village" name="population" class="champ-saisie" min="0" placeholder="Ex: 5000">
+                                </div>
+                                <div class="groupe-champ">
+                                    <label class="etiquette-champ" for="description-village">Description</label>
+                                    <textarea id="description-village" name="description" class="champ-saisie" rows="3" placeholder="Description optionnelle du village"></textarea>
+                                </div>
+                                <div class="actions-formulaire">
+                                    <button type="button" id="btn-annuler-village" class="bouton bouton-ghost">Annuler</button>
+                                    <button type="submit" id="btn-sauvegarder-village" class="bouton bouton-primaire">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v11l5-5 1.41-1.41L5 17.25V21z"></path>
+                                        </svg>
+                                        Sauvegarder
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Formulaire Quartier -->
-                <div id="formulaire-quartier" class="carte formulaire-carte masque">
-                    <div class="carte-header">
-                        <h3 id="titre-formulaire-quartier">Nouveau Quartier</h3>
-                        <button id="btn-fermer-formulaire-quartier" class="bouton-fermer-modal">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <line x1="18" y1="6" x2="6" y2="18"></line>
-                                <line x1="6" y1="6" x2="18" y2="18"></line>
-                            </svg>
-                        </button>
-                    </div>
-                    <div class="carte-body">
-                        <form id="form-quartier">
-                            <div class="groupe-champ">
-                                <label class="etiquette-champ" for="village-quartier">Village *</label>
-                                <select id="village-quartier" name="village_id" class="champ-saisie" required>
-                                    <option value="">Sélectionner un village...</option>
-                                </select>
-                                <div class="message-erreur" id="erreur-village-quartier"></div>
-                            </div>
-                            <div class="groupe-champ">
-                                <label class="etiquette-champ" for="nom-quartier">Nom du Quartier *</label>
-                                <input type="text" id="nom-quartier" name="nom" class="champ-saisie" required placeholder="Ex: Tokoin">
-                                <div class="message-erreur" id="erreur-nom-quartier"></div>
-                            </div>
-                            <div class="groupe-champ">
-                                <label class="etiquette-champ" for="description-quartier">Description</label>
-                                <textarea id="description-quartier" name="description" class="champ-saisie" rows="3" placeholder="Description optionnelle du quartier"></textarea>
-                            </div>
-                            <div class="actions-formulaire">
-                                <button type="button" id="btn-annuler-quartier" class="bouton bouton-ghost">Annuler</button>
-                                <button type="submit" id="btn-sauvegarder-quartier" class="bouton bouton-primaire">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v11l5-5 1.41-1.41L5 17.25V21z"></path>
-                                    </svg>
-                                    Sauvegarder
-                                </button>
-                            </div>
-                        </form>
+                <div id="formulaire-quartier" class="overlay-modal masque">
+                    <div class="modal formulaire-carte">
+                        <div class="carte-header">
+                            <h3 id="titre-formulaire-quartier">Nouveau Quartier</h3>
+                            <button id="btn-fermer-formulaire-quartier" class="bouton-fermer-modal">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="carte-body">
+                            <form id="form-quartier">
+                                <div class="groupe-champ">
+                                    <label class="etiquette-champ" for="village-quartier">Village *</label>
+                                    <select id="village-quartier" name="village_id" class="champ-saisie" required>
+                                        <option value="">Sélectionner un village...</option>
+                                    </select>
+                                    <div class="message-erreur" id="erreur-village-quartier"></div>
+                                </div>
+                                <div class="groupe-champ">
+                                    <label class="etiquette-champ" for="nom-quartier">Nom du Quartier *</label>
+                                    <input type="text" id="nom-quartier" name="nom" class="champ-saisie" required placeholder="Ex: Tokoin">
+                                    <div class="message-erreur" id="erreur-nom-quartier"></div>
+                                </div>
+                                <div class="groupe-champ">
+                                    <label class="etiquette-champ" for="description-quartier">Description</label>
+                                    <textarea id="description-quartier" name="description" class="champ-saisie" rows="3" placeholder="Description optionnelle du quartier"></textarea>
+                                </div>
+                                <div class="actions-formulaire">
+                                    <button type="button" id="btn-annuler-quartier" class="bouton bouton-ghost">Annuler</button>
+                                    <button type="submit" id="btn-sauvegarder-quartier" class="bouton bouton-primaire">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v11l5-5 1.41-1.41L5 17.25V21z"></path>
+                                        </svg>
+                                        Sauvegarder
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
 
@@ -730,7 +741,7 @@ class ComposantGestionCantons extends BaseComposant {
                 <div id="details-canton" class="carte masque">
                     <div class="carte-header">
                         <h3 id="nom-canton-selectionne">Villages du Canton</h3>
-                        <button id="btn-nouveau-village" class="bouton bouton-secondaire">
+                        <button id="btn-nouveau-village" class="bouton bouton-secondaire" title="Créer un nouveau village dans ce canton">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <circle cx="12" cy="12" r="10"></circle>
                                 <line x1="12" y1="8" x2="12" y2="16"></line>
@@ -799,6 +810,20 @@ class ComposantGestionCantons extends BaseComposant {
             e.preventDefault();
             this.sauvegarderVillage();
         });
+
+        // Formulaire quartier
+        document.getElementById('btn-fermer-formulaire-quartier')?.addEventListener('click', () => {
+            this.masquerFormulaireQuartier();
+        });
+
+        document.getElementById('btn-annuler-quartier')?.addEventListener('click', () => {
+            this.masquerFormulaireQuartier();
+        });
+
+        document.getElementById('form-quartier')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.sauvegarderQuartier();
+        });
     }
 
     async chargerCantons() {
@@ -859,19 +884,19 @@ class ComposantGestionCantons extends BaseComposant {
                     </td>
                     <td>
                         <div class="actions-tableau">
-                            <button class="bouton-action-tableau" onclick="composantCantons.voirCanton(${canton.id})" title="Voir">
+                            <button class="bouton-action-tableau" onclick="composantCantons.voirCanton(${canton.id})" title="Voir les villages de ce canton">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                                     <circle cx="12" cy="12" r="3"></circle>
                                 </svg>
                             </button>
-                            <button class="bouton-action-tableau" onclick="composantCantons.modifierCanton(${canton.id})" title="Modifier">
+                            <button class="bouton-action-tableau" onclick="composantCantons.modifierCanton(${canton.id})" title="Modifier ce canton">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"></path>
                                     <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                                 </svg>
                             </button>
-                            <button class="bouton-action-tableau" onclick="composantCantons.supprimerCanton(${canton.id})" title="Supprimer">
+                            <button class="bouton-action-tableau" onclick="composantCantons.supprimerCanton(${canton.id})" title="Supprimer ce canton">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polyline points="3,6 5,6 21,6"></polyline>
                                     <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
@@ -894,16 +919,22 @@ class ComposantGestionCantons extends BaseComposant {
     afficherFormulaireCantonVide() {
         this.etat.modeEdition = false;
         this.etat.cantonSelectionne = null;
-        
+
+        // Fermer les autres formulaires avant d'ouvrir celui du canton
+        this.masquerFormulaireVillage();
+        this.masquerFormulaireQuartier();
+
         document.getElementById('titre-formulaire').textContent = 'Nouveau Canton';
         document.getElementById('form-canton').reset();
         document.getElementById('formulaire-canton').classList.remove('masque');
+        document.body.classList.add('modal-open');
     }
 
     masquerFormulaire() {
         document.getElementById('formulaire-canton').classList.add('masque');
         document.getElementById('form-canton').reset();
         this.viderErreurs();
+        document.body.classList.remove('modal-open');
     }
 
     async sauvegarderCanton() {
@@ -917,9 +948,12 @@ class ComposantGestionCantons extends BaseComposant {
         if (!this.validerCanton(canton)) return;
 
         try {
-            if (this.etat.modeEdition) {
-                canton.id = this.etat.cantonSelectionne.id;
-                await window.StockageDonnees.mettreAJour('cantons', canton.id, canton);
+            if (this.etat.modeEdition && this.etat.cantonSelectionne) {
+                const cantonMisAJour = {
+                    ...this.etat.cantonSelectionne,
+                    ...canton
+                };
+                await window.StockageDonnees.mettreAJour('cantons', cantonMisAJour);
             } else {
                 await window.StockageDonnees.ajouter('cantons', canton);
             }
@@ -962,15 +996,15 @@ class ComposantGestionCantons extends BaseComposant {
         if (!canton) return;
 
         this.etat.cantonSelectionne = canton;
-        
+
         // Afficher la section des détails
         const detailsCanton = document.getElementById('details-canton');
         const nomCanton = document.getElementById('nom-canton-selectionne');
-        
+
         if (detailsCanton && nomCanton) {
             nomCanton.textContent = `Villages du Canton ${canton.nom}`;
             detailsCanton.classList.remove('masque');
-            
+
             // Charger et afficher les villages
             this.chargerVillages(cantonId);
         }
@@ -983,10 +1017,15 @@ class ComposantGestionCantons extends BaseComposant {
         this.etat.modeEdition = true;
         this.etat.cantonSelectionne = canton;
 
+        // Fermer les autres formulaires avant d'ouvrir celui du canton
+        this.masquerFormulaireVillage();
+        this.masquerFormulaireQuartier();
+
         document.getElementById('titre-formulaire').textContent = 'Modifier Canton';
         document.getElementById('nom-canton').value = canton.nom;
         document.getElementById('description-canton').value = canton.description || '';
         document.getElementById('formulaire-canton').classList.remove('masque');
+        document.body.classList.add('modal-open');
     }
 
     async supprimerCanton(cantonId) {
@@ -1003,7 +1042,7 @@ class ComposantGestionCantons extends BaseComposant {
     }
 
     filtrerCantons(terme) {
-        const cantonsFiltres = this.etat.cantons.filter(canton => 
+        const cantonsFiltres = this.etat.cantons.filter(canton =>
             canton.nom.toLowerCase().includes(terme.toLowerCase())
         );
         this.afficherCantons(cantonsFiltres);
@@ -1022,36 +1061,56 @@ class ComposantGestionCantons extends BaseComposant {
     afficherFormulaireVillage() {
         this.etat.modeEditionVillage = false;
         this.etat.villageSelectionne = null;
-        
+
+        // Fermer les formulaires canton et quartier avant d'ouvrir celui du village
+        this.masquerFormulaire();
+        this.masquerFormulaireQuartier();
+
         // Pré-sélectionner le canton si un canton est sélectionné
         const selectCanton = document.getElementById('canton-village');
         if (this.etat.cantonSelectionne && selectCanton) {
             selectCanton.value = this.etat.cantonSelectionne.id;
         }
-        
+
         document.getElementById('titre-formulaire-village').textContent = 'Nouveau Village';
         document.getElementById('form-village').reset();
         if (this.etat.cantonSelectionne && selectCanton) {
             selectCanton.value = this.etat.cantonSelectionne.id;
         }
         document.getElementById('formulaire-village').classList.remove('masque');
+        document.body.classList.add('modal-open');
     }
 
     masquerFormulaireVillage() {
         document.getElementById('formulaire-village').classList.add('masque');
         document.getElementById('form-village').reset();
         this.viderErreursVillage();
+        document.body.classList.remove('modal-open');
     }
 
     async chargerVillages(cantonId) {
         try {
             const villages = await window.StockageDonnees.rechercher('villages', { canton_id: parseInt(cantonId) });
             this.etat.villages = villages;
+            this.chargerVillagesFormulaireQuartier();
             this.afficherVillages(villages);
         } catch (erreur) {
             console.error('Erreur lors du chargement des villages:', erreur);
             this.afficherErreur('Erreur lors du chargement des villages');
         }
+    }
+
+    chargerVillagesFormulaireQuartier() {
+        const selectVillage = document.getElementById('village-quartier');
+        if (!selectVillage) return;
+
+        selectVillage.innerHTML = '<option value="">Sélectionner un village...</option>';
+        this.etat.villages.forEach(village => {
+            const option = document.createElement('option');
+            option.value = village.id;
+            option.textContent = village.nom;
+            selectVillage.appendChild(option);
+        });
     }
 
     afficherVillages(villages) {
@@ -1084,16 +1143,23 @@ class ComposantGestionCantons extends BaseComposant {
                     <td>${village.description || '-'}</td>
                     <td>
                         <div class="actions-tableau">
-                            <button class="bouton-action-tableau" onclick="composantCantons.modifierVillage(${village.id})" title="Modifier">
+                            <button class="bouton-action-tableau" onclick="composantCantons.modifierVillage(${village.id})" title="Modifier ce village">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"></path>
                                     <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                                 </svg>
                             </button>
-                            <button class="bouton-action-tableau" onclick="composantCantons.supprimerVillage(${village.id})" title="Supprimer">
+                            <button class="bouton-action-tableau" onclick="composantCantons.supprimerVillage(${village.id})" title="Supprimer ce village">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polyline points="3,6 5,6 21,6"></polyline>
                                     <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
+                                </svg>
+                            </button>
+                            <button class="bouton-action-tableau" onclick="composantCantons.afficherFormulaireQuartier(${village.id})" title="Ajouter un quartier à ce village">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="12" y1="8" x2="12" y2="16"></line>
+                                    <line x1="8" y1="12" x2="16" y2="12"></line>
                                 </svg>
                             </button>
                         </div>
@@ -1119,21 +1185,24 @@ class ComposantGestionCantons extends BaseComposant {
         if (!this.validerVillage(village)) return;
 
         try {
-            if (this.etat.modeEditionVillage) {
-                village.id = this.etat.villageSelectionne.id;
-                await window.StockageDonnees.mettreAJour('villages', village.id, village);
+            if (this.etat.modeEditionVillage && this.etat.villageSelectionne) {
+                const villageMisAJour = {
+                    ...this.etat.villageSelectionne,
+                    ...village
+                };
+                await window.StockageDonnees.mettreAJour('villages', villageMisAJour);
             } else {
                 await window.StockageDonnees.ajouter('villages', village);
             }
 
             this.masquerFormulaireVillage();
-            
+
             // Recharger les données
             await this.chargerCantons();
             if (this.etat.cantonSelectionne) {
                 await this.chargerVillages(this.etat.cantonSelectionne.id);
             }
-            
+
             this.afficherSucces(this.etat.modeEditionVillage ? 'Village modifié avec succès' : 'Village créé avec succès');
         } catch (erreur) {
             console.error('Erreur lors de la sauvegarde du village:', erreur);
@@ -1173,12 +1242,17 @@ class ComposantGestionCantons extends BaseComposant {
         this.etat.modeEditionVillage = true;
         this.etat.villageSelectionne = village;
 
+        // Fermer les formulaires canton et quartier avant d'ouvrir celui du village
+        this.masquerFormulaire();
+        this.masquerFormulaireQuartier();
+
         document.getElementById('titre-formulaire-village').textContent = 'Modifier Village';
         document.getElementById('canton-village').value = village.canton_id;
         document.getElementById('nom-village').value = village.nom;
         document.getElementById('population-village').value = village.population || '';
         document.getElementById('description-village').value = village.description || '';
         document.getElementById('formulaire-village').classList.remove('masque');
+        document.body.classList.add('modal-open');
     }
 
     async supprimerVillage(villageId) {
@@ -1186,18 +1260,106 @@ class ComposantGestionCantons extends BaseComposant {
 
         try {
             await window.StockageDonnees.supprimer('villages', villageId);
-            
+
             // Recharger les données
             await this.chargerCantons();
             if (this.etat.cantonSelectionne) {
                 await this.chargerVillages(this.etat.cantonSelectionne.id);
             }
-            
+
             this.afficherSucces('Village supprimé avec succès');
         } catch (erreur) {
             console.error('Erreur lors de la suppression du village:', erreur);
             this.afficherErreur('Erreur lors de la suppression du village');
         }
+    }
+
+    afficherFormulaireQuartier(villageId = null) {
+        this.etat.modeEditionQuartier = false;
+        this.etat.quartierSelectionne = null;
+
+        // Fermer les formulaires canton et village avant d'ouvrir celui du quartier
+        this.masquerFormulaire();
+        this.masquerFormulaireVillage();
+
+        const selectVillage = document.getElementById('village-quartier');
+        if (selectVillage) {
+            this.chargerVillagesFormulaireQuartier();
+            if (villageId) {
+                selectVillage.value = villageId;
+            }
+        }
+
+        document.getElementById('titre-formulaire-quartier').textContent = 'Nouveau Quartier';
+        document.getElementById('form-quartier').reset();
+        if (selectVillage && villageId) {
+            selectVillage.value = villageId;
+        }
+        document.getElementById('formulaire-quartier').classList.remove('masque');
+        document.body.classList.add('modal-open');
+    }
+
+    masquerFormulaireQuartier() {
+        document.getElementById('formulaire-quartier').classList.add('masque');
+        document.getElementById('form-quartier').reset();
+        this.viderErreursQuartier();
+        document.body.classList.remove('modal-open');
+    }
+
+    async sauvegarderQuartier() {
+        const formData = new FormData(document.getElementById('form-quartier'));
+        const quartier = {
+            village_id: parseInt(formData.get('village_id')),
+            nom: formData.get('nom').trim(),
+            description: formData.get('description').trim()
+        };
+
+        // Validation
+        if (!this.validerQuartier(quartier)) return;
+
+        try {
+            if (this.etat.modeEditionQuartier && this.etat.quartierSelectionne) {
+                const quartierMisAJour = {
+                    ...this.etat.quartierSelectionne,
+                    ...quartier
+                };
+                await window.StockageDonnees.mettreAJour('quartiers', quartierMisAJour);
+            } else {
+                await window.StockageDonnees.ajouter('quartiers', quartier);
+            }
+            this.masquerFormulaireQuartier();
+            this.afficherSucces(this.etat.modeEditionQuartier ? 'Quartier modifié avec succès' : 'Quartier créé avec succès');
+        } catch (erreur) {
+            console.error('Erreur lors de la sauvegarde du quartier:', erreur);
+            this.afficherErreur('Erreur lors de la sauvegarde du quartier');
+        }
+    }
+
+    validerQuartier(quartier) {
+        this.viderErreursQuartier();
+        let valide = true;
+
+        if (!quartier.village_id) {
+            this.afficherErreurChamp('erreur-village-quartier', 'Le village est obligatoire');
+            valide = false;
+        }
+
+        if (!quartier.nom) {
+            this.afficherErreurChamp('erreur-nom-quartier', 'Le nom est obligatoire');
+            valide = false;
+        } else if (quartier.nom.length < 2) {
+            this.afficherErreurChamp('erreur-nom-quartier', 'Le nom doit contenir au moins 2 caractères');
+            valide = false;
+        }
+
+        return valide;
+    }
+
+    viderErreursQuartier() {
+        const errVillage = document.getElementById('erreur-village-quartier');
+        const errNom = document.getElementById('erreur-nom-quartier');
+        if (errVillage) errVillage.textContent = '';
+        if (errNom) errNom.textContent = '';
     }
 }
 
@@ -1259,7 +1421,7 @@ if (typeof window !== 'undefined') {
     window.ComposantGestionCantons = ComposantGestionCantons;
     window.ComposantRapports = ComposantRapports;
     window.ComposantParametres = ComposantParametres;
-    
+
     // Référence globale pour les actions des tableaux
     window.composantCantons = null;
 }

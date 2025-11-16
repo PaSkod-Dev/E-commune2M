@@ -354,6 +354,10 @@
     backdrop-filter: blur(4px);
 }
 
+body.modal-open {
+    overflow: hidden;
+}
+
 .modal {
     background-color: white;
     border-radius: var(--rayon-2xl);
@@ -974,6 +978,24 @@
     border: 2px solid var(--couleur-primaire);
     box-shadow: 0 8px 25px rgba(59, 130, 246, 0.15);
 }
+
+/* Formulaires affichés en modale (canton, village, quartier) */
+.overlay-modal .modal.formulaire-carte {
+    width: 100%;
+    max-width: 640px;
+    max-height: 90vh;
+    /* ne dépasse pas la hauteur écran */
+    display: flex;
+    flex-direction: column;
+}
+
+/* Seul le corps du formulaire scrolle */
+.overlay-modal .modal.formulaire-carte .carte-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+}
+
+
 
 .formulaire-carte .carte-header {
     background: linear-gradient(135deg, var(--couleur-primaire) 0%, var(--couleur-primaire-foncee) 100%);
