@@ -1002,6 +1002,69 @@ body.modal-open {
     overflow-y: auto;
 }
 
+/* Modale de confirmation de suppression */
+.modal-confirmation {
+    max-width: 420px;
+    width: 100%;
+    padding: var(--espacement-lg);
+}
+
+.modal-confirmation-header {
+    display: flex;
+    align-items: center;
+    gap: var(--espacement-md);
+    margin-bottom: var(--espacement-md);
+}
+
+.modal-confirmation-icone {
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    background-color: rgba(239, 68, 68, 0.1);
+    /* rouge clair */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--couleur-erreur);
+}
+
+.modal-confirmation-titres h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.modal-confirmation-titres p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--couleur-texte-secondaire);
+}
+
+.modal-confirmation-body {
+    font-size: 0.95rem;
+    color: var(--couleur-texte);
+    margin-bottom: var(--espacement-lg);
+}
+
+.modal-confirmation-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--espacement-sm);
+}
+
+/* Bouton de suppression (danger) */
+.bouton-danger {
+    background-color: var(--couleur-erreur);
+    color: #fff;
+}
+
+.bouton-danger:hover:not(:disabled) {
+    background-color: #b91c1c;
+    /* rouge plus foncé */
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(239, 68, 68, 0.4);
+}
+
 /* Layout villages / quartiers dans la carte de détails canton */
 .conteneur-villages-quartiers {
     display: grid;
@@ -1056,6 +1119,33 @@ body.modal-open {
 
 .ligne-village-selectionnee td:first-child {
     border-left: 3px solid var(--couleur-accent);
+}
+
+/* En-tête des quartiers liés au village sélectionné */
+.en-tete-quartiers {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacement-xs);
+    margin-bottom: var(--espacement-md);
+    padding: var(--espacement-md) var(--espacement-lg);
+    border-radius: var(--rayon-bordure);
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border-left: 4px solid var(--couleur-accent);
+}
+
+/* On réutilise .badge-hierarchie mais avec un accent spécial pour le niveau Quartiers */
+.badge-hierarchie.niveau-quartier {
+    background-color: #ecfeff;
+    color: var(--couleur-accent);
+}
+
+/* Tableau des quartiers : léger rappel visuel */
+.tableau.quartiers-du-village tbody tr {
+    border-left: 3px solid transparent;
+}
+
+.tableau.quartiers-du-village tbody tr:hover {
+    border-left-color: var(--couleur-accent);
 }
 
 /* Barre de recherche dans la liste des cantons */

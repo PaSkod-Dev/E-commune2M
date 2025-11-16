@@ -555,8 +555,9 @@ class ComposantGestionCantons extends BaseComposant {
         super(options);
         this.etat = {
             cantons: [],
-            villages: [],
+            villages: [],          // villages du canton sélectionné
             quartiers: [],
+            tousLesVillages: [],   // tous les villages, pour compter par canton
             cantonSelectionne: null,
             villageSelectionne: null,
             quartierSelectionne: null,
@@ -759,6 +760,36 @@ class ComposantGestionCantons extends BaseComposant {
                         </div>
                     </div>
                 </div>
+                
+                                <!-- Modale de confirmation de suppression -->
+                <div id="modal-confirmation-suppression" class="overlay-modal masque">
+                    <div class="modal modal-confirmation">
+                        <div class="modal-confirmation-header">
+                            <div class="modal-confirmation-icone">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                                    <circle cx="12" cy="16" r="1"></circle>
+                                </svg>
+                            </div>
+                            <div class="modal-confirmation-titres">
+                                <h3 id="confirmation-titre">Confirmer la suppression</h3>
+                                <p id="confirmation-sous-titre">Cette action est irréversible.</p>
+                            </div>
+                        </div>
+                        <div class="modal-confirmation-body">
+                            <p id="confirmation-message">Êtes-vous sûr de vouloir supprimer cet élément&nbsp;?</p>
+                        </div>
+                        <div class="modal-confirmation-actions">
+                            <button id="btn-confirmation-annuler" class="bouton bouton-ghost">
+                                Annuler
+                            </button>
+                            <button id="btn-confirmation-confirmer" class="bouton bouton-danger">
+                                Supprimer
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         `;
     }
@@ -831,8 +862,15 @@ class ComposantGestionCantons extends BaseComposant {
 
     async chargerCantons() {
         try {
+            // On charge tous les cantons
             const cantons = await window.StockageDonnees.obtenirTous('cantons');
+
+            // On charge aussi tous les villages pour pouvoir compter par canton
+            const tousLesVillages = await window.StockageDonnees.obtenirTous('villages');
+
             this.etat.cantons = cantons;
+            this.etat.tousLesVillages = tousLesVillages;
+
             this.afficherCantons(cantons);
             this.chargerCantonsFormulaire();
         } catch (erreur) {
@@ -916,7 +954,70 @@ class ComposantGestionCantons extends BaseComposant {
     }
 
     compterVillages(cantonId) {
-        return this.etat.villages.filter(v => v.canton_id === cantonId).length;
+        if (!this.etat.tousLesVillages) {
+            return 0;
+        }
+
+        return this.etat.tousLesVillages.filter(v => v.canton_id === cantonId).length;
+    }
+    
+    async demanderConfirmation({ titre, message, texteConfirmer = 'Supprimer' } = {}) {
+        const overlay = document.getElementById('modal-confirmation-suppression');
+        if (!overlay) {
+            // fallback : on utilise le confirm natif si la modale n'existe pas
+            return confirm(message || 'Confirmer ?');
+        }
+
+        const titreEl = document.getElementById('confirmation-titre');
+        const messageEl = document.getElementById('confirmation-message');
+        const btnConfirmer = document.getElementById('btn-confirmation-confirmer');
+        const btnAnnuler = document.getElementById('btn-confirmation-annuler');
+
+        if (titreEl && titre) titreEl.textContent = titre;
+        if (messageEl && message) messageEl.textContent = message;
+        if (btnConfirmer) btnConfirmer.textContent = texteConfirmer;
+
+        overlay.classList.remove('masque');
+        document.body.classList.add('modal-open');
+
+        return new Promise((resolve) => {
+            const fermer = (resultat) => {
+                overlay.classList.add('masque');
+                document.body.classList.remove('modal-open');
+                btnConfirmer.removeEventListener('click', onConfirmer);
+                btnAnnuler.removeEventListener('click', onAnnuler);
+                overlay.removeEventListener('click', onOverlayClick);
+                document.removeEventListener('keydown', onKeyDown);
+                resolve(resultat);
+            };
+
+            const onConfirmer = (e) => {
+                e.preventDefault();
+                fermer(true);
+            };
+
+            const onAnnuler = (e) => {
+                e.preventDefault();
+                fermer(false);
+            };
+
+            const onOverlayClick = (e) => {
+                if (e.target === overlay) {
+                    fermer(false);
+                }
+            };
+
+            const onKeyDown = (e) => {
+                if (e.key === 'Escape') {
+                    fermer(false);
+                }
+            };
+
+            btnConfirmer.addEventListener('click', onConfirmer);
+            btnAnnuler.addEventListener('click', onAnnuler);
+            overlay.addEventListener('click', onOverlayClick);
+            document.addEventListener('keydown', onKeyDown);
+        });
     }
 
     afficherFormulaireCantonVide() {
@@ -1043,7 +1144,13 @@ class ComposantGestionCantons extends BaseComposant {
     }
 
     async supprimerCanton(cantonId) {
-        if (!confirm('Êtes-vous sûr de vouloir supprimer ce canton ?')) return;
+        const canton = this.etat.cantons.find(c => c.id === cantonId);
+        const ok = await this.demanderConfirmation({
+            titre: 'Supprimer ce canton',
+            message: `Êtes-vous sûr de vouloir supprimer le canton ${canton ? canton.nom : ''} ? Cette action est définitive.`,
+            texteConfirmer: 'Supprimer le canton'
+        });
+        if (!ok) return;
 
         try {
             await window.StockageDonnees.supprimer('cantons', cantonId);
@@ -1216,10 +1323,17 @@ class ComposantGestionCantons extends BaseComposant {
             conteneur.innerHTML = `<p class="message-vide">Aucun quartier dans le village ${this.etat.villageSelectionne.nom}. Créez le premier quartier.</p>`;
             return;
         }
+        // On récupère le nom du canton pour afficher tout le chemin
+        const nomCanton = this.etat.cantonSelectionne ? this.etat.cantonSelectionne.nom : '';
 
         let html = `
-            <h4>Quartiers du village ${this.etat.villageSelectionne.nom}</h4>
-            <table class="tableau">
+            <div class="en-tete-quartiers">
+                <span class="badge-hierarchie niveau-quartier">Niveau 3 · Quartiers</span>
+                <div class="chemin-hierarchie">
+                    ${nomCanton ? `Canton ${nomCanton} > ` : ''}Village ${this.etat.villageSelectionne.nom} > Quartiers
+                </div>
+            </div>
+            <table class="tableau quartiers-du-village">
                 <thead>
                     <tr>
                         <th>Nom</th>
@@ -1343,7 +1457,13 @@ class ComposantGestionCantons extends BaseComposant {
     }
 
     async supprimerVillage(villageId) {
-        if (!confirm('Êtes-vous sûr de vouloir supprimer ce village ?')) return;
+        const village = this.etat.villages.find(v => v.id === villageId);
+        const ok = await this.demanderConfirmation({
+            titre: 'Supprimer ce village',
+            message: `Êtes-vous sûr de vouloir supprimer le village ${village ? village.nom : ''} ?`,
+            texteConfirmer: 'Supprimer le village'
+        });
+        if (!ok) return;
 
         try {
             await window.StockageDonnees.supprimer('villages', villageId);
@@ -1505,8 +1625,15 @@ class ComposantGestionCantons extends BaseComposant {
     }
 
     async supprimerQuartier(quartierId) {
-        if (!confirm('Êtes-vous sûr de vouloir supprimer ce quartier ?')) return;
 
+        const quartier = this.etat.quartiers.find(q => q.id === quartierId);
+        const ok = await this.demanderConfirmation({
+            titre: 'Supprimer ce quartier',
+            message: `Êtes-vous sûr de vouloir supprimer le quartier ${quartier ? quartier.nom : ''} ?`,
+            texteConfirmer: 'Supprimer le quartier'
+        });
+        if (!ok) return;
+        
         try {
             await window.StockageDonnees.supprimer('quartiers', quartierId);
 
