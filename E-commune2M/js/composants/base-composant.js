@@ -143,6 +143,65 @@ class BaseComposant {
         return params;
     }
 
+    async demanderConfirmation({ titre, message, texteConfirmer = 'Supprimer' } = {}) {
+        const overlay = document.getElementById('modal-confirmation-suppression');
+        if (!overlay) {
+            // fallback : on utilise le confirm natif si la modale n'existe pas
+            return confirm(message || 'Confirmer ?');
+        }
+
+        const titreEl = document.getElementById('confirmation-titre');
+        const messageEl = document.getElementById('confirmation-message');
+        const btnConfirmer = document.getElementById('btn-confirmation-confirmer');
+        const btnAnnuler = document.getElementById('btn-confirmation-annuler');
+
+        if (titreEl && titre) titreEl.textContent = titre;
+        if (messageEl && message) messageEl.textContent = message;
+        if (btnConfirmer) btnConfirmer.textContent = texteConfirmer;
+
+        overlay.classList.remove('masque');
+        document.body.classList.add('modal-open');
+
+        return new Promise((resolve) => {
+            const fermer = (resultat) => {
+                overlay.classList.add('masque');
+                document.body.classList.remove('modal-open');
+                btnConfirmer.removeEventListener('click', onConfirmer);
+                btnAnnuler.removeEventListener('click', onAnnuler);
+                overlay.removeEventListener('click', onOverlayClick);
+                document.removeEventListener('keydown', onKeyDown);
+                resolve(resultat);
+            };
+
+            const onConfirmer = (e) => {
+                e.preventDefault();
+                fermer(true);
+            };
+
+            const onAnnuler = (e) => {
+                e.preventDefault();
+                fermer(false);
+            };
+
+            const onOverlayClick = (e) => {
+                if (e.target === overlay) {
+                    fermer(false);
+                }
+            };
+
+            const onKeyDown = (e) => {
+                if (e.key === 'Escape') {
+                    fermer(false);
+                }
+            };
+
+            btnConfirmer.addEventListener('click', onConfirmer);
+            btnAnnuler.addEventListener('click', onAnnuler);
+            overlay.addEventListener('click', onOverlayClick);
+            document.addEventListener('keydown', onKeyDown);
+        });
+    }
+
     /**
      * Nettoie les ressources du composant
      */
@@ -248,30 +307,611 @@ class ComposantTableauBord extends BaseComposant {
 
 // Composants temporaires pour les autres pages
 class ComposantListeCotisants extends BaseComposant {
+    constructor(options = {}) {
+        super(options);
+        this.etat = {
+            cotisants: [],
+            cantons: [],
+            villages: [],
+            quartiers: [],
+            filtreCantonId: '',
+            filtreVillageId: '',
+            filtreQuartierId: ''
+        };
+        this.sauvegardeCotisantEnCours = false;
+    }
+
     async rendre() {
         return `
             <div class="conteneur-cotisants">
-                <h1>
-                    <svg class="icone-titre" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="9" cy="7" r="4"></circle>
-                        <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
-                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                    </svg>
-                    Gestion des Cotisants
-                </h1>
-                <div class="alerte alerte-info">
-                    <svg class="icone-alerte" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                        <polyline points="14,2 14,8 20,8"></polyline>
-                        <line x1="16" y1="13" x2="8" y2="13"></line>
-                        <line x1="16" y1="17" x2="8" y2="17"></line>
-                        <polyline points="10,9 9,9 8,9"></polyline>
-                    </svg>
-                    Module en cours de développement...
+                <div class="en-tete-page">
+                    <h1>
+                        <svg class="icone-titre" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                        Gestion des Cotisants
+                    </h1>
+                    <button id="btn-nouveau-cotisant" class="bouton bouton-primaire">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="16"></line>
+                            <line x1="8" y1="12" x2="16" y2="12"></line>
+                        </svg>
+                        Nouveau Cotisant
+                    </button>
+                </div>
+
+                <!-- Filtres canton / village / quartier -->
+                <div class="barre-filtres barre-filtres-cotisants">
+                    <div class="filtre-groupe">
+                        <label>Canton</label>
+                        <select id="filtre-canton" class="select-moderne">
+                            <option value="">Tous les cantons</option>
+                        </select>
+                    </div>
+                    <div class="filtre-groupe">
+                        <label>Village</label>
+                        <select id="filtre-village" class="select-moderne">
+                            <option value="">Tous les villages</option>
+                        </select>
+                    </div>
+                    <div class="filtre-groupe">
+                        <label>Quartier</label>
+                        <select id="filtre-quartier" class="select-moderne">
+                            <option value="">Tous les quartiers</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Liste des cotisants -->
+                <div class="carte">
+                    <div class="carte-body">
+                        <div id="liste-cotisants" class="tableau-conteneur">
+                            <div class="spinner"></div>
+                            <p>Chargement des cotisants...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Formulaire Cotisant -->
+                <div id="formulaire-cotisant" class="overlay-modal masque">
+                    <div class="modal formulaire-carte">
+                        <div class="carte-header">
+                            <h3 id="titre-formulaire-cotisant">Nouveau Cotisant</h3>
+                            <button id="btn-fermer-formulaire-cotisant" class="bouton-fermer-modal">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="carte-body">
+                            <form id="form-cotisant">
+                                <!-- Relationnel : Canton / Village / Quartier -->
+                                <div class="groupe-champ triple-champ">
+                                    <div>
+                                        <label class="etiquette-champ" for="canton-cotisant">Canton *</label>
+                                        <select id="canton-cotisant" name="canton_id" class="champ-saisie" required>
+                                            <option value="">Sélectionner un canton...</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="etiquette-champ" for="village-cotisant">Village *</label>
+                                        <select id="village-cotisant" name="village_id" class="champ-saisie" required>
+                                            <option value="">Sélectionner un village...</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="etiquette-champ" for="quartier-cotisant">Quartier *</label>
+                                        <select id="quartier-cotisant" name="quartier_id" class="champ-saisie" required>
+                                            <option value="">Sélectionner un quartier...</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <!-- Identité -->
+                                <div class="groupe-champ double-champ">
+                                    <div>
+                                        <label class="etiquette-champ" for="nom-cotisant">Nom *</label>
+                                        <input type="text" id="nom-cotisant" name="nom" class="champ-saisie" required>
+                                    </div>
+                                    <div>
+                                        <label class="etiquette-champ" for="prenom-cotisant">Prénom *</label>
+                                        <input type="text" id="prenom-cotisant" name="prenom" class="champ-saisie" required>
+                                    </div>
+                                </div>
+
+                                <div class="groupe-champ double-champ">
+                                    <div>
+                                        <label class="etiquette-champ" for="sexe-cotisant">Sexe *</label>
+                                        <select id="sexe-cotisant" name="sexe" class="champ-saisie" required>
+                                            <option value="">Sélectionner...</option>
+                                            <option value="F">Femme</option>
+                                            <option value="M">Homme</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="etiquette-champ" for="fonction-cotisant">Fonction *</label>
+                                        <select id="fonction-cotisant" name="fonction" class="champ-saisie" required>
+                                            <option value="">Sélectionner...</option>
+                                            <option value="cultivateur">Cultivateur / Agricultrice</option>
+                                            <option value="enseignant">Enseignant(e)</option>
+                                            <option value="employe">Employé(e)</option>
+                                            <option value="directeur">Directeur / Cadre</option>
+                                            <option value="commercant">Commerçant(e)</option>
+                                            <option value="autre">Autre</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="groupe-champ">
+                                    <label class="etiquette-champ" for="autre-fonction-cotisant">Autre fonction (si nécessaire)</label>
+                                    <input type="text" id="autre-fonction-cotisant" name="autre_fonction" class="champ-saisie" placeholder="Préciser la fonction">
+                                </div>
+
+                                <div class="groupe-champ double-champ">
+                                    <div>
+                                        <label class="etiquette-champ" for="telephone-cotisant">Téléphone</label>
+                                        <input type="tel" id="telephone-cotisant" name="telephone" class="champ-saisie" placeholder="Ex : 90 00 00 00">
+                                    </div>
+                                    <div>
+                                        <label class="etiquette-champ" for="montant-cotisation">Montant de la cotisation (CFA) *</label>
+                                        <input type="number" min="0" id="montant-cotisation" name="montant_cotisation" class="champ-saisie" required>
+                                    </div>
+                                </div>
+
+                                <div class="groupe-champ">
+                                    <label class="etiquette-champ" for="date-cotisation">Date de cotisation</label>
+                                    <input type="date" id="date-cotisation" name="date_cotisation" class="champ-saisie">
+                                </div>
+
+                                <div class="actions-formulaire">
+                                    <button type="button" id="btn-annuler-cotisant" class="bouton bouton-ghost">Annuler</button>
+                                    <button type="submit" id="btn-sauvegarder-cotisant" class="bouton bouton-primaire">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v11l-5 5-1.41-1.41L5 17.25V21z"></path>
+                                        </svg>
+                                        Enregistrer
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                                <div id="formulaire-cotisant" class="overlay-modal masque">
+                    ...
+                </div>
+
+                <!-- Modale de confirmation de suppression (identique à celle des cantons) -->
+                <div id="modal-confirmation-suppression" class="overlay-modal masque">
+                    <div class="modal modal-confirmation">
+                        <div class="modal-confirmation-header">
+                            <div class="modal-confirmation-icone">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                                    <circle cx="12" cy="16" r="1"></circle>
+                                </svg>
+                            </div>
+                            <div class="modal-confirmation-titres">
+                                <h3 id="confirmation-titre">Confirmer la suppression</h3>
+                                <p id="confirmation-sous-titre">Cette action est irréversible.</p>
+                            </div>
+                        </div>
+                        <div class="modal-confirmation-body">
+                            <p id="confirmation-message">Êtes-vous sûr de vouloir supprimer cet élément&nbsp;?</p>
+                        </div>
+                        <div class="modal-confirmation-actions">
+                            <button id="btn-confirmation-annuler" class="bouton bouton-ghost">
+                                Annuler
+                            </button>
+                            <button id="btn-confirmation-confirmer" class="bouton bouton-danger">
+                                Supprimer
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
+    }
+
+    async initialiser() {
+        await this.chargerStructureTerritoriale();
+        await this.chargerCotisants();
+        this.configurerEvenements();
+    }
+
+    async chargerStructureTerritoriale() {
+        const [cantons, villages, quartiers] = await Promise.all([
+            window.StockageDonnees.obtenirTous('cantons'),
+            window.StockageDonnees.obtenirTous('villages'),
+            window.StockageDonnees.obtenirTous('quartiers')
+        ]);
+
+        this.etat.cantons = cantons;
+        this.etat.villages = villages;
+        this.etat.quartiers = quartiers;
+
+        this.peuplerSelectsFiltres();
+        this.peuplerSelectsFormulaire();
+    }
+
+    async chargerCotisants() {
+        const cotisants = await window.StockageDonnees.obtenirTous('cotisants');
+        this.etat.cotisants = cotisants;
+        this.afficherCotisants();
+    }
+
+    // ====== SELECTS (filtres + formulaire) ======
+
+    peuplerSelectsFiltres() {
+        const { cantons, villages, quartiers } = this.etat;
+        const selectCanton = document.getElementById('filtre-canton');
+        const selectVillage = document.getElementById('filtre-village');
+        const selectQuartier = document.getElementById('filtre-quartier');
+
+        if (selectCanton) {
+            selectCanton.innerHTML = '<option value="">Tous les cantons</option>';
+            cantons.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = c.nom;
+                selectCanton.appendChild(opt);
+            });
+        }
+
+        if (selectVillage) {
+            selectVillage.innerHTML = '<option value="">Tous les villages</option>';
+            villages.forEach(v => {
+                const opt = document.createElement('option');
+                opt.value = v.id;
+                opt.textContent = v.nom;
+                selectVillage.appendChild(opt);
+            });
+        }
+
+        if (selectQuartier) {
+            selectQuartier.innerHTML = '<option value="">Tous les quartiers</option>';
+            quartiers.forEach(q => {
+                const opt = document.createElement('option');
+                opt.value = q.id;
+                opt.textContent = q.nom;
+                selectQuartier.appendChild(opt);
+            });
+        }
+    }
+
+    peuplerSelectsFormulaire() {
+        const { cantons, villages, quartiers } = this.etat;
+        const selectCanton = document.getElementById('canton-cotisant');
+        const selectVillage = document.getElementById('village-cotisant');
+        const selectQuartier = document.getElementById('quartier-cotisant');
+
+        if (selectCanton) {
+            selectCanton.innerHTML = '<option value="">Sélectionner un canton...</option>';
+            cantons.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = c.nom;
+                selectCanton.appendChild(opt);
+            });
+        }
+
+        if (selectVillage) {
+            selectVillage.innerHTML = '<option value="">Sélectionner un village...</option>';
+            villages.forEach(v => {
+                const opt = document.createElement('option');
+                opt.value = v.id;
+                opt.textContent = v.nom;
+                opt.dataset.cantonId = v.canton_id;
+                selectVillage.appendChild(opt);
+            });
+        }
+
+        if (selectQuartier) {
+            selectQuartier.innerHTML = '<option value="">Sélectionner un quartier...</option>';
+            quartiers.forEach(q => {
+                const village = villages.find(v => v.id === q.village_id);
+                const opt = document.createElement('option');
+                opt.value = q.id;
+                opt.textContent = q.nom;
+                if (village) {
+                    opt.dataset.villageId = village.id;
+                    opt.dataset.cantonId = village.canton_id;
+                }
+                selectQuartier.appendChild(opt);
+            });
+        }
+    }
+
+    // ====== Événements ======
+
+    configurerEvenements() {
+        const btnNouveau = document.getElementById('btn-nouveau-cotisant');
+        const btnFermer = document.getElementById('btn-fermer-formulaire-cotisant');
+        const btnAnnuler = document.getElementById('btn-annuler-cotisant');
+        const form = document.getElementById('form-cotisant');
+
+        btnNouveau?.addEventListener('click', () => this.afficherFormulaireCotisant());
+        btnFermer?.addEventListener('click', () => this.masquerFormulaireCotisant());
+        btnAnnuler?.addEventListener('click', () => this.masquerFormulaireCotisant());
+
+        form?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.sauvegarderCotisant();
+        });
+
+        // Filtres liste
+        const filtreCanton = document.getElementById('filtre-canton');
+        const filtreVillage = document.getElementById('filtre-village');
+        const filtreQuartier = document.getElementById('filtre-quartier');
+
+        filtreCanton?.addEventListener('change', (e) => {
+            this.etat.filtreCantonId = e.target.value;
+            this.afficherCotisants();
+        });
+
+        filtreVillage?.addEventListener('change', (e) => {
+            this.etat.filtreVillageId = e.target.value;
+            this.afficherCotisants();
+        });
+
+        filtreQuartier?.addEventListener('change', (e) => {
+            this.etat.filtreQuartierId = e.target.value;
+            this.afficherCotisants();
+        });
+
+        // Dépendances Canton → Village → Quartier (formulaire)
+        const cantonSelect = document.getElementById('canton-cotisant');
+        const villageSelect = document.getElementById('village-cotisant');
+        const quartierSelect = document.getElementById('quartier-cotisant');
+
+        cantonSelect?.addEventListener('change', (e) => {
+            const cantonId = e.target.value;
+            this.filtrerVillagesPourCanton(cantonId);
+            this.filtrerQuartiersPourVillage('');
+        });
+
+        villageSelect?.addEventListener('change', (e) => {
+            const villageId = e.target.value;
+            this.filtrerQuartiersPourVillage(villageId);
+            const village = this.etat.villages.find(v => String(v.id) === String(villageId));
+            if (village && cantonSelect) {
+                cantonSelect.value = village.canton_id;
+            }
+        });
+
+        quartierSelect?.addEventListener('change', (e) => {
+            const option = e.target.selectedOptions[0];
+            if (!option) return;
+            const villageId = option.dataset.villageId;
+            const cantonId = option.dataset.cantonId;
+            if (villageId && villageSelect) villageSelect.value = villageId;
+            if (cantonId && cantonSelect) cantonSelect.value = cantonId;
+        });
+
+        // Event delegation pour supprimer un cotisant dans le tableau
+        this.deleguerEvenement('#liste-cotisants', '[data-action="supprimer-cotisant"]', 'click', (e, cible) => {
+            const id = parseInt(cible.dataset.id, 10);
+            if (!isNaN(id)) {
+                this.supprimerCotisant(id);
+            }
+        });
+    }
+
+    filtrerVillagesPourCanton(cantonId) {
+        const villageSelect = document.getElementById('village-cotisant');
+        if (!villageSelect) return;
+        villageSelect.innerHTML = '<option value="">Sélectionner un village...</option>';
+
+        this.etat.villages
+            .filter(v => !cantonId || String(v.canton_id) === String(cantonId))
+            .forEach(v => {
+                const opt = document.createElement('option');
+                opt.value = v.id;
+                opt.textContent = v.nom;
+                opt.dataset.cantonId = v.canton_id;
+                villageSelect.appendChild(opt);
+            });
+    }
+
+    filtrerQuartiersPourVillage(villageId) {
+        const quartierSelect = document.getElementById('quartier-cotisant');
+        if (!quartierSelect) return;
+        quartierSelect.innerHTML = '<option value="">Sélectionner un quartier...</option>';
+
+        this.etat.quartiers
+            .filter(q => !villageId || String(q.village_id) === String(villageId))
+            .forEach(q => {
+                const village = this.etat.villages.find(v => v.id === q.village_id);
+                const opt = document.createElement('option');
+                opt.value = q.id;
+                opt.textContent = q.nom;
+                if (village) {
+                    opt.dataset.villageId = village.id;
+                    opt.dataset.cantonId = village.canton_id;
+                }
+                quartierSelect.appendChild(opt);
+            });
+    }
+
+    // ====== Formulaire ======
+
+    afficherFormulaireCotisant() {
+        const overlay = document.getElementById('formulaire-cotisant');
+        const form = document.getElementById('form-cotisant');
+        if (overlay && form) {
+            form.reset();
+            overlay.classList.remove('masque');
+            document.body.classList.add('modal-open');
+        }
+    }
+
+    masquerFormulaireCotisant() {
+        const overlay = document.getElementById('formulaire-cotisant');
+        if (overlay) {
+            overlay.classList.add('masque');
+            document.body.classList.remove('modal-open');
+        }
+    }
+
+    async sauvegarderCotisant() {
+        const form = document.getElementById('form-cotisant');
+        if (!form) return;
+
+        // Empêche une deuxième soumission pendant que la première est en cours
+        if (this.sauvegardeCotisantEnCours) {
+            return;
+        }
+
+        const formData = new FormData(form);
+
+        const cotisant = {
+            nom: formData.get('nom').trim(),
+            prenom: formData.get('prenom').trim(),
+            sexe: formData.get('sexe'),
+            telephone: formData.get('telephone').trim(),
+            fonction: formData.get('fonction'),
+            autre_fonction: formData.get('autre_fonction')?.trim() || null,
+            canton_id: parseInt(formData.get('canton_id')),
+            village_id: parseInt(formData.get('village_id')),
+            quartier_id: parseInt(formData.get('quartier_id')),
+            montant_cotisation: formData.get('montant_cotisation') ? parseInt(formData.get('montant_cotisation')) : 0,
+            date_cotisation: formData.get('date_cotisation') || new Date().toISOString().slice(0, 10),
+            evenement: 'signature_convention_2024',
+            statut: STATUTS_COTISANT.ACTIF
+        };
+
+        // Validation
+        if (!cotisant.nom || !cotisant.prenom || !cotisant.sexe ||
+            !cotisant.quartier_id || !cotisant.montant_cotisation) {
+            alert('Merci de remplir tous les champs obligatoires.');
+            return;
+        }
+
+        // À partir d’ici, on bloque une deuxième soumission
+        this.sauvegardeCotisantEnCours = true;
+        const boutonSauvegarder = document.getElementById('btn-sauvegarder-cotisant');
+        if (boutonSauvegarder) {
+            boutonSauvegarder.disabled = true;
+        }
+
+        try {
+            await window.StockageDonnees.ajouter('cotisants', cotisant);
+            this.masquerFormulaireCotisant();
+            await this.chargerCotisants();
+        } catch (erreur) {
+            console.error('Erreur lors de la sauvegarde du cotisant:', erreur);
+            alert('Erreur lors de la sauvegarde du cotisant.');
+        } finally {
+            this.sauvegardeCotisantEnCours = false;
+            if (boutonSauvegarder) {
+                boutonSauvegarder.disabled = false;
+            }
+        }
+    }
+
+    // ====== Liste des cotisants ======
+
+    afficherCotisants() {
+        const conteneur = document.getElementById('liste-cotisants');
+        if (!conteneur) return;
+
+        if (!this.etat.cotisants || this.etat.cotisants.length === 0) {
+            conteneur.innerHTML = '<p class="message-vide">Aucun cotisant enregistré pour le moment.</p>';
+            return;
+        }
+
+        const { filtreCantonId, filtreVillageId, filtreQuartierId } = this.etat;
+
+        const cotisantsFiltres = this.etat.cotisants.filter(c => {
+            if (filtreQuartierId && String(c.quartier_id) !== String(filtreQuartierId)) return false;
+            if (filtreVillageId && String(c.village_id) !== String(filtreVillageId)) return false;
+            if (filtreCantonId && String(c.canton_id) !== String(filtreCantonId)) return false;
+            return true;
+        });
+
+        if (cotisantsFiltres.length === 0) {
+            conteneur.innerHTML = '<p class="message-vide">Aucun cotisant ne correspond aux filtres sélectionnés.</p>';
+            return;
+        }
+
+        let html = `
+            <table class="tableau tableau-cotisants">
+                <thead>
+                    <tr>
+                        <th>Nom & Prénom</th>
+                        <th>Sexe</th>
+                        <th>Quartier</th>
+                        <th>Fonction</th>
+                        <th>Montant (CFA)</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        cotisantsFiltres.forEach(c => {
+            const quartier = this.etat.quartiers.find(q => q.id === c.quartier_id);
+            const village = this.etat.villages.find(v => v.id === c.village_id);
+            const canton = this.etat.cantons.find(ct => ct.id === c.canton_id);
+
+            const libelleTerritoire = [
+                quartier ? quartier.nom : null,
+                village ? village.nom : null,
+                canton ? canton.nom : null
+            ].filter(Boolean).join(' · ');
+
+            html += `
+                <tr>
+                    <td><strong>${c.nom}</strong><br><span class="texte-secondaire">${c.prenom || ''}</span></td>
+                    <td>${c.sexe === 'F' ? 'Femme' : c.sexe === 'M' ? 'Homme' : '-'}</td>
+                    <td>${libelleTerritoire || '-'}</td>
+                    <td>${c.fonction || (c.autre_fonction || '-')}</td>
+                    <td>${c.montant_cotisation ? formaterMontant(c.montant_cotisation) : 0}</td>
+                    <td>${c.date_cotisation || '-'}</td>
+                    <td>
+                        <div class="actions-tableau">
+                            <button class="bouton-action-tableau" data-action="supprimer-cotisant" data-id="${c.id}" title="Supprimer ce cotisant">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="3,6 5,6 21,6"></polyline>
+                                    <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+
+        html += '</tbody></table>';
+        conteneur.innerHTML = html;
+    }
+
+    async supprimerCotisant(id) {
+        const cotisant = this.etat.cotisants.find(c => c.id === id);
+        const nomComplet = cotisant
+            ? `${cotisant.prenom ? cotisant.prenom + ' ' : ''}${cotisant.nom}`.trim()
+            : '';
+
+        const ok = await this.demanderConfirmation({
+            titre: 'Supprimer ce cotisant',
+            message: `Êtes-vous sûr de vouloir supprimer le cotisant ${nomComplet || ''} ? Cette action est définitive.`,
+            texteConfirmer: 'Supprimer le cotisant'
+        });
+        if (!ok) return;
+
+        try {
+            await window.StockageDonnees.supprimer('cotisants', id);
+            await this.chargerCotisants();
+        } catch (erreur) {
+            console.error('Erreur lors de la suppression du cotisant:', erreur);
+            alert('Erreur lors de la suppression du cotisant.');
+        }
     }
 }
 
@@ -566,6 +1206,7 @@ class ComposantGestionCantons extends BaseComposant {
             modeEditionQuartier: false,
             formulaireVisible: false
         };
+        this.sauvegardeQuartierEnCours = false;
     }
 
     async rendre() {
@@ -1562,7 +2203,15 @@ class ComposantGestionCantons extends BaseComposant {
     }
 
     async sauvegarderQuartier() {
-        const formData = new FormData(document.getElementById('form-quartier'));
+        // Empêche une deuxième soumission pendant que la première est en cours
+        if (this.sauvegardeQuartierEnCours) {
+            return;
+        }
+
+        const form = document.getElementById('form-quartier');
+        if (!form) return;
+
+        const formData = new FormData(form);
         const quartier = {
             village_id: parseInt(formData.get('village_id')),
             nom: formData.get('nom').trim(),
@@ -1571,6 +2220,13 @@ class ComposantGestionCantons extends BaseComposant {
 
         // Validation
         if (!this.validerQuartier(quartier)) return;
+
+        // On bloque les soumissions suivantes
+        this.sauvegardeQuartierEnCours = true;
+        const boutonSauvegarder = document.getElementById('btn-sauvegarder-quartier');
+        if (boutonSauvegarder) {
+            boutonSauvegarder.disabled = true;
+        }
 
         try {
             if (this.etat.modeEditionQuartier && this.etat.quartierSelectionne) {
@@ -1582,16 +2238,26 @@ class ComposantGestionCantons extends BaseComposant {
             } else {
                 await window.StockageDonnees.ajouter('quartiers', quartier);
             }
+
             this.masquerFormulaireQuartier();
 
             if (this.etat.villageSelectionne) {
                 await this.chargerQuartiers(this.etat.villageSelectionne.id);
             }
 
-            this.afficherSucces(this.etat.modeEditionQuartier ? 'Quartier modifié avec succès' : 'Quartier créé avec succès');
+            this.afficherSucces(
+                this.etat.modeEditionQuartier
+                    ? 'Quartier modifié avec succès'
+                    : 'Quartier créé avec succès'
+            );
         } catch (erreur) {
             console.error('Erreur lors de la sauvegarde du quartier:', erreur);
             this.afficherErreur('Erreur lors de la sauvegarde du quartier');
+        } finally {
+            this.sauvegardeQuartierEnCours = false;
+            if (boutonSauvegarder) {
+                boutonSauvegarder.disabled = false;
+            }
         }
     }
 
@@ -1633,7 +2299,7 @@ class ComposantGestionCantons extends BaseComposant {
             texteConfirmer: 'Supprimer le quartier'
         });
         if (!ok) return;
-        
+
         try {
             await window.StockageDonnees.supprimer('quartiers', quartierId);
 

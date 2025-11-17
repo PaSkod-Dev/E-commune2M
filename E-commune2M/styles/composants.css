@@ -960,6 +960,44 @@ body.modal-open {
     }
 }
 
+/* ===== GESTION DES COTISANTS ===== */
+
+.conteneur-cotisants {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: var(--espacement-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--espacement-lg);
+}
+
+.barre-filtres-cotisants {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--espacement-md);
+    align-items: flex-end;
+}
+
+.tableau-cotisants .texte-secondaire {
+    font-size: 0.85rem;
+    color: var(--couleur-texte-secondaire);
+}
+
+.tableau-cotisants td {
+    vertical-align: middle;
+}
+
+@media (max-width: 768px) {
+    .conteneur-cotisants {
+        padding: var(--espacement-md);
+    }
+
+    .barre-filtres-cotisants {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}
+
 /* ===== INTERFACES DE GESTION ===== */
 
 /* En-tête de page */
