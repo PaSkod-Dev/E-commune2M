@@ -316,7 +316,12 @@ class ComposantListeCotisants extends BaseComposant {
             quartiers: [],
             filtreCantonId: '',
             filtreVillageId: '',
-            filtreQuartierId: ''
+            filtreQuartierId: '',
+            triColonne: 'nom',
+            triDirection: 'asc',
+            cotisantSelectionneId: null,
+            modeEditionCotisant: false,
+            cotisantEnEdition: null
         };
         this.sauvegardeCotisantEnCours = false;
     }
@@ -611,14 +616,11 @@ class ComposantListeCotisants extends BaseComposant {
         if (selectQuartier) {
             selectQuartier.innerHTML = '<option value="">Sélectionner un quartier...</option>';
             quartiers.forEach(q => {
-                const village = villages.find(v => v.id === q.village_id);
                 const opt = document.createElement('option');
                 opt.value = q.id;
                 opt.textContent = q.nom;
-                if (village) {
-                    opt.dataset.villageId = village.id;
-                    opt.dataset.cantonId = village.canton_id;
-                }
+                opt.dataset.villageId = q.village_id;
+                opt.dataset.cantonId = q.canton_id;
                 selectQuartier.appendChild(opt);
             });
         }
@@ -697,6 +699,48 @@ class ComposantListeCotisants extends BaseComposant {
                 this.supprimerCotisant(id);
             }
         });
+
+        // Event delegation pour éditer un cotisant dans le tableau
+        this.deleguerEvenement('#liste-cotisants', '[data-action="editer-cotisant"]', 'click', (e, cible) => {
+            const id = parseInt(cible.dataset.id, 10);
+            if (!isNaN(id)) {
+                this.ouvrirEditionCotisant(id);
+            }
+        });
+
+        // Tri des colonnes du tableau des cotisants
+        this.deleguerEvenement('#liste-cotisants', 'th[data-tri-colonne]', 'click', (e, cible) => {
+            const colonne = cible.dataset.triColonne;
+            if (!colonne) return;
+
+            let { triColonne, triDirection } = this.etat;
+
+            if (triColonne === colonne) {
+                triDirection = triDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                triColonne = colonne;
+                triDirection = 'asc';
+            }
+
+            this.etat.triColonne = triColonne;
+            this.etat.triDirection = triDirection;
+            this.afficherCotisants();
+        });
+
+        // Sélection visuelle d'une ligne de cotisant
+        this.deleguerEvenement('#liste-cotisants', 'tbody tr', 'click', (e, cible) => {
+            const idAttr = cible.dataset.id;
+            const id = idAttr ? parseInt(idAttr, 10) : NaN;
+            if (isNaN(id)) return;
+
+            if (this.etat.cotisantSelectionneId === id) {
+                this.etat.cotisantSelectionneId = null;
+            } else {
+                this.etat.cotisantSelectionneId = id;
+            }
+
+            this.afficherCotisants();
+        });
     }
 
     filtrerVillagesPourCanton(cantonId) {
@@ -717,31 +761,95 @@ class ComposantListeCotisants extends BaseComposant {
 
     filtrerQuartiersPourVillage(villageId) {
         const quartierSelect = document.getElementById('quartier-cotisant');
-        if (!quartierSelect) return;
-        quartierSelect.innerHTML = '<option value="">Sélectionner un quartier...</option>';
+        if (!quartierSelect || !villageId) {
+            if (quartierSelect) {
+                quartierSelect.innerHTML = '<option value="">Sélectionner un quartier...</option>';
+            }
+            return;
+        }
 
-        this.etat.quartiers
-            .filter(q => !villageId || String(q.village_id) === String(villageId))
-            .forEach(q => {
-                const village = this.etat.villages.find(v => v.id === q.village_id);
-                const opt = document.createElement('option');
-                opt.value = q.id;
-                opt.textContent = q.nom;
-                if (village) {
-                    opt.dataset.villageId = village.id;
-                    opt.dataset.cantonId = village.canton_id;
-                }
-                quartierSelect.appendChild(opt);
-            });
+        const quartiers = this.etat.quartiers.filter(q => String(q.village_id) === String(villageId));
+
+        quartierSelect.innerHTML = '<option value="">Sélectionner un quartier...</option>';
+        quartiers.forEach(q => {
+            const opt = document.createElement('option');
+            opt.value = q.id;
+            opt.textContent = q.nom;
+            opt.dataset.villageId = villageId;
+            opt.dataset.cantonId = q.canton_id;
+            quartierSelect.appendChild(opt);
+        });
     }
 
     // ====== Formulaire ======
 
+    ouvrirEditionCotisant(id) {
+        const cotisant = this.etat.cotisants.find(c => c.id === id);
+        if (!cotisant) return;
+
+        this.etat.modeEditionCotisant = true;
+        this.etat.cotisantEnEdition = cotisant;
+
+        const overlay = document.getElementById('formulaire-cotisant');
+        const form = document.getElementById('form-cotisant');
+        const titre = document.getElementById('titre-formulaire-cotisant');
+        if (!overlay || !form) return;
+
+        form.reset();
+        this.remplirFormulaireCotisant(cotisant);
+        if (titre) {
+            titre.textContent = 'Modifier Cotisant';
+        }
+
+        overlay.classList.remove('masque');
+        document.body.classList.add('modal-open');
+    }
+
+    remplirFormulaireCotisant(cotisant) {
+        const form = document.getElementById('form-cotisant');
+        if (!form || !cotisant) return;
+
+        const cantonSelect = document.getElementById('canton-cotisant');
+        const villageSelect = document.getElementById('village-cotisant');
+        const quartierSelect = document.getElementById('quartier-cotisant');
+
+        if (cantonSelect && cotisant.canton_id != null) {
+            cantonSelect.value = cotisant.canton_id;
+            this.filtrerVillagesPourCanton(cotisant.canton_id);
+        }
+
+        if (villageSelect && cotisant.village_id != null) {
+            villageSelect.value = cotisant.village_id;
+            this.filtrerQuartiersPourVillage(cotisant.village_id);
+        }
+
+        if (quartierSelect && cotisant.quartier_id != null) {
+            quartierSelect.value = cotisant.quartier_id;
+        }
+
+        form.nom.value = cotisant.nom || '';
+        form.prenom.value = cotisant.prenom || '';
+        form.sexe.value = cotisant.sexe || '';
+        form.telephone.value = cotisant.telephone || '';
+        form.fonction.value = cotisant.fonction || '';
+        if (form.autre_fonction) {
+            form.autre_fonction.value = cotisant.autre_fonction || '';
+        }
+        form.montant_cotisation.value = cotisant.montant_cotisation != null ? cotisant.montant_cotisation : '';
+        form.date_cotisation.value = cotisant.date_cotisation || '';
+    }
+
     afficherFormulaireCotisant() {
         const overlay = document.getElementById('formulaire-cotisant');
         const form = document.getElementById('form-cotisant');
+        const titre = document.getElementById('titre-formulaire-cotisant');
         if (overlay && form) {
+            this.etat.modeEditionCotisant = false;
+            this.etat.cotisantEnEdition = null;
             form.reset();
+            if (titre) {
+                titre.textContent = 'Nouveau Cotisant';
+            }
             overlay.classList.remove('masque');
             document.body.classList.add('modal-open');
         }
@@ -753,6 +861,8 @@ class ComposantListeCotisants extends BaseComposant {
             overlay.classList.add('masque');
             document.body.classList.remove('modal-open');
         }
+        this.etat.modeEditionCotisant = false;
+        this.etat.cotisantEnEdition = null;
     }
 
     async sauvegarderCotisant() {
@@ -797,7 +907,15 @@ class ComposantListeCotisants extends BaseComposant {
         }
 
         try {
-            await window.StockageDonnees.ajouter('cotisants', cotisant);
+            if (this.etat.modeEditionCotisant && this.etat.cotisantEnEdition) {
+                const cotisantMisAJour = {
+                    ...this.etat.cotisantEnEdition,
+                    ...cotisant
+                };
+                await window.StockageDonnees.mettreAJour('cotisants', cotisantMisAJour);
+            } else {
+                await window.StockageDonnees.ajouter('cotisants', cotisant);
+            }
             this.masquerFormulaireCotisant();
             await this.chargerCotisants();
         } catch (erreur) {
@@ -822,7 +940,14 @@ class ComposantListeCotisants extends BaseComposant {
             return;
         }
 
-        const { filtreCantonId, filtreVillageId, filtreQuartierId } = this.etat;
+        const {
+            filtreCantonId,
+            filtreVillageId,
+            filtreQuartierId,
+            triColonne,
+            triDirection,
+            cotisantSelectionneId
+        } = this.etat;
 
         const cotisantsFiltres = this.etat.cotisants.filter(c => {
             if (filtreQuartierId && String(c.quartier_id) !== String(filtreQuartierId)) return false;
@@ -836,23 +961,71 @@ class ComposantListeCotisants extends BaseComposant {
             return;
         }
 
+        const colonneTri = triColonne || 'nom';
+        const directionTri = triDirection || 'asc';
+        const facteur = directionTri === 'desc' ? -1 : 1;
+
+        const comparer = (a, b) => {
+            let valeurA;
+            let valeurB;
+
+            switch (colonneTri) {
+                case 'nom': {
+                    valeurA = `${a.nom || ''} ${a.prenom || ''}`.toLowerCase();
+                    valeurB = `${b.nom || ''} ${b.prenom || ''}`.toLowerCase();
+                    break;
+                }
+                case 'montant': {
+                    valeurA = Number(a.montant_cotisation || 0);
+                    valeurB = Number(b.montant_cotisation || 0);
+                    break;
+                }
+                case 'date': {
+                    valeurA = a.date_cotisation || '';
+                    valeurB = b.date_cotisation || '';
+                    break;
+                }
+                default:
+                    return 0;
+            }
+
+            if (valeurA < valeurB) return -1 * facteur;
+            if (valeurA > valeurB) return 1 * facteur;
+            return 0;
+        };
+
+        const cotisantsTries = [...cotisantsFiltres].sort(comparer);
+
+        const total = cotisantsTries.length;
+        const totalMontant = cotisantsTries.reduce((somme, c) => somme + (c.montant_cotisation || 0), 0);
+        const libelleTotal = total > 1 ? `${total} cotisants trouvés` : `${total} cotisant trouvé`;
+
+        const classeTriNom = 'triable' + (colonneTri === 'nom' ? ` tri-${directionTri}` : '');
+        const classeTriMontant = 'triable' + (colonneTri === 'montant' ? ` tri-${directionTri}` : '');
+        const classeTriDate = 'triable' + (colonneTri === 'date' ? ` tri-${directionTri}` : '');
+
         let html = `
+            <div class="resume-cotisants">
+                <span class="resume-cotisants-compteur">${libelleTotal}</span>
+            </div>
             <table class="tableau tableau-cotisants">
                 <thead>
                     <tr>
-                        <th>Nom & Prénom</th>
+                        <th data-tri-colonne="nom" class="${classeTriNom}">Nom & Prénom</th>
                         <th>Sexe</th>
                         <th>Quartier</th>
                         <th>Fonction</th>
-                        <th>Montant (CFA)</th>
-                        <th>Date</th>
+                        <th data-tri-colonne="montant" class="${classeTriMontant}">Montant (CFA)</th>
+                        <th data-tri-colonne="date" class="${classeTriDate}">Date</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
         `;
 
-        cotisantsFiltres.forEach(c => {
+        const idSelectionne = cotisantSelectionneId;
+
+        cotisantsTries.forEach(c => {
             const quartier = this.etat.quartiers.find(q => q.id === c.quartier_id);
             const village = this.etat.villages.find(v => v.id === c.village_id);
             const canton = this.etat.cantons.find(ct => ct.id === c.canton_id);
@@ -863,16 +1036,25 @@ class ComposantListeCotisants extends BaseComposant {
                 canton ? canton.nom : null
             ].filter(Boolean).join(' · ');
 
+            const estSelectionne = idSelectionne != null && c.id === idSelectionne;
+            const classesLigne = estSelectionne ? 'ligne-cotisant-selectionnee' : '';
+
             html += `
-                <tr>
+                <tr data-id="${c.id}" class="${classesLigne}">
                     <td><strong>${c.nom}</strong><br><span class="texte-secondaire">${c.prenom || ''}</span></td>
                     <td>${c.sexe === 'F' ? 'Femme' : c.sexe === 'M' ? 'Homme' : '-'}</td>
                     <td>${libelleTerritoire || '-'}</td>
                     <td>${c.fonction || (c.autre_fonction || '-')}</td>
-                    <td>${c.montant_cotisation ? formaterMontant(c.montant_cotisation) : 0}</td>
+                    <td>${c.montant_cotisation ? formaterMontant(c.montant_cotisation, false) : 0}</td>
                     <td>${c.date_cotisation || '-'}</td>
                     <td>
                         <div class="actions-tableau">
+                            <button class="bouton-action-tableau" data-action="editer-cotisant" data-id="${c.id}" title="Modifier ce cotisant">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 20h9"></path>
+                                    <path d="M5 20l1.5-5.5L18 3l3 3-11.5 11.5L5 20z"></path>
+                                </svg>
+                            </button>
                             <button class="bouton-action-tableau" data-action="supprimer-cotisant" data-id="${c.id}" title="Supprimer ce cotisant">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polyline points="3,6 5,6 21,6"></polyline>
@@ -885,7 +1067,17 @@ class ComposantListeCotisants extends BaseComposant {
             `;
         });
 
-        html += '</tbody></table>';
+        html += `
+                </tbody>
+                <tfoot>
+                    <tr class="ligne-totaux-cotisants">
+                        <td colspan="4" class="texte-secondaire">Total des montants visibles</td>
+                        <td>${formaterMontant(totalMontant, false)}</td>
+                        <td colspan="2"></td>
+                    </tr>
+                </tfoot>
+            </table>
+        `;
         conteneur.innerHTML = html;
     }
 

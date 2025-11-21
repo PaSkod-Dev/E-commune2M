@@ -987,16 +987,51 @@ body.modal-open {
     vertical-align: middle;
 }
 
-@media (max-width: 768px) {
-    .conteneur-cotisants {
-        padding: var(--espacement-md);
-    }
-
-    .barre-filtres-cotisants {
-        flex-direction: column;
-        align-items: stretch;
-    }
+/* Alignement spécifique pour les colonnes Montant et Date du tableau des cotisants */
+.tableau-cotisants thead th:nth-child(5),
+.tableau-cotisants thead th:nth-child(6),
+.tableau-cotisants tbody td:nth-child(5),
+.tableau-cotisants tbody td:nth-child(6) {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
 }
+
+/* Hover plus marqué pour le tableau des cotisants */
+.tableau-cotisants tbody tr {
+    transition: background-color var(--transition-rapide),
+        transform var(--transition-rapide),
+        box-shadow var(--transition-rapide);
+}
+
+.tableau-cotisants tbody tr:hover {
+    background-color: #eff6ff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+}
+
+/* Résumé au-dessus du tableau : nombre de cotisants */
+.resume-cotisants {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--espacement-md) var(--espacement-lg);
+    border-bottom: 1px solid var(--couleur-neutre-200);
+    background-color: var(--couleur-neutre-50);
+}
+
+.resume-cotisants-compteur {
+    font-size: 0.9rem;
+    color: var(--couleur-texte-secondaire);
+}
+
+/* Ligne sélectionnée dans le tableau des cotisants */
+.ligne-cotisant-selectionnee {}
+
+.barre-filtres-cotisants {
+    flex-direction: column;
+    align-items: stretch;
+}
+
 
 /* ===== INTERFACES DE GESTION ===== */
 
