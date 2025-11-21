@@ -14,7 +14,7 @@ class GestionnaireErreurs {
         this.maxErreurs = 100;
         this.configurerGestionGlobale();
     }
-    
+
     /**
      * Configure la gestion globale des erreurs
      */
@@ -27,7 +27,7 @@ class GestionnaireErreurs {
                 colonne: event.colno
             });
         });
-        
+
         // Capturer les rejets de promesses non gérés
         window.addEventListener('unhandledrejection', (event) => {
             this.capturer(event.reason, 'Promesse non gérée', {
@@ -35,7 +35,7 @@ class GestionnaireErreurs {
             });
         });
     }
-    
+
     /**
      * Capture une erreur
      * @param {Error} erreur - L'erreur à capturer
@@ -52,33 +52,33 @@ class GestionnaireErreurs {
             metadonnees,
             niveau: this.determinerNiveau(erreur)
         };
-        
+
         // Enregistrer l'erreur
         this.enregistrer(erreurFormatee);
-        
+
         // Logger dans la console
         this.loggerConsole(erreurFormatee);
-        
+
         // Afficher à l'utilisateur si critique
         if (erreurFormatee.niveau === 'critique' || erreurFormatee.niveau === 'erreur') {
             this.afficherNotificationUtilisateur(erreurFormatee);
         }
-        
+
         return erreurFormatee.id;
     }
-    
+
     /**
      * Enregistre l'erreur dans l'historique
      * @param {Object} erreur - Erreur formatée
      */
     enregistrer(erreur) {
         this.erreurs.unshift(erreur);
-        
+
         // Limiter la taille de l'historique
         if (this.erreurs.length > this.maxErreurs) {
             this.erreurs = this.erreurs.slice(0, this.maxErreurs);
         }
-        
+
         // Sauvegarder dans localStorage pour analyse
         try {
             const erreursRecentes = this.erreurs.slice(0, 20);
@@ -87,7 +87,7 @@ class GestionnaireErreurs {
             console.warn('Impossible de sauvegarder les erreurs:', e);
         }
     }
-    
+
     /**
      * Logger l'erreur dans la console
      * @param {Object} erreur - Erreur formatée
@@ -105,7 +105,7 @@ class GestionnaireErreurs {
         }
         console.groupEnd();
     }
-    
+
     /**
      * Affiche une notification à l'utilisateur
      * @param {Object} erreur - Erreur formatée
@@ -113,14 +113,14 @@ class GestionnaireErreurs {
     afficherNotificationUtilisateur(erreur) {
         const message = this.obtenirMessageUtilisateur(erreur);
         const type = erreur.niveau === 'critique' ? 'erreur' : 'avertissement';
-        
+
         if (window.UtilitairesTogo && window.UtilitairesTogo.afficherNotification) {
             window.UtilitairesTogo.afficherNotification(message, type, 5000);
         } else {
             alert(message);
         }
     }
-    
+
     /**
      * Détermine le niveau de sévérité de l'erreur
      * @param {Error} erreur - L'erreur
@@ -128,9 +128,9 @@ class GestionnaireErreurs {
      */
     determinerNiveau(erreur) {
         if (!erreur) return 'info';
-        
+
         const message = erreur.message || '';
-        
+
         if (message.includes('critique') || message.includes('fatal')) {
             return 'critique';
         }
@@ -139,7 +139,7 @@ class GestionnaireErreurs {
         }
         return 'erreur';
     }
-    
+
     /**
      * Obtient le message à afficher à l'utilisateur
      * @param {Object} erreur - Erreur formatée
@@ -153,11 +153,11 @@ class GestionnaireErreurs {
             'Stockage': 'Erreur lors de l\'accès aux données.',
             'Réseau': 'Problème de connexion réseau.'
         };
-        
-        return messagesPersonnalises[erreur.contexte] || 
-               `Une erreur s'est produite: ${erreur.message}`;
+
+        return messagesPersonnalises[erreur.contexte] ||
+            `Une erreur s'est produite: ${erreur.message}`;
     }
-    
+
     /**
      * Obtient le style CSS pour la console
      * @param {string} niveau - Niveau de sévérité
@@ -172,7 +172,7 @@ class GestionnaireErreurs {
         };
         return styles[niveau] || styles.info;
     }
-    
+
     /**
      * Génère un ID unique pour l'erreur
      * @returns {string} ID unique
@@ -180,7 +180,7 @@ class GestionnaireErreurs {
     genererIdErreur() {
         return `err_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     }
-    
+
     /**
      * Obtient l'historique des erreurs
      * @param {number} limite - Nombre d'erreurs à récupérer
@@ -189,7 +189,7 @@ class GestionnaireErreurs {
     obtenirHistorique(limite = 10) {
         return this.erreurs.slice(0, limite);
     }
-    
+
     /**
      * Nettoie l'historique des erreurs
      */
@@ -210,65 +210,65 @@ class ApplicationPrincipale {
         this.initialise = false;
         this.composants = new Map();
         this.services = new Map();
-        
+
         this.initialiserApplication();
     }
-    
+
     /**
      * Initialise l'application complète
      */
     async initialiserApplication() {
         try {
             console.log('🏠 Démarrage du Gestionnaire Cotisations Togo...');
-            
+
             // Afficher l'écran de chargement
             this.afficherEcranChargement();
-            
+
             // Initialiser les services
             await this.initialiserServices();
-            
+
             // Configurer les écouteurs d'événements
             this.configurerEcouteursEvenements();
-            
+
             // Initialiser l'interface utilisateur
             this.initialiserInterfaceUtilisateur();
-            
+
             // Masquer l'écran de chargement
             setTimeout(() => {
                 this.masquerEcranChargement();
                 this.initialise = true;
                 console.log('✅ Application initialisée avec succès !');
             }, 2000);
-            
+
         } catch (erreur) {
             console.error('❌ Erreur lors de l\'initialisation:', erreur);
             this.gererErreurInitialisation(erreur);
         }
     }
-    
+
     /**
      * Initialise tous les services
      */
     async initialiserServices() {
         console.log('Initialisation des services...');
-        
+
         // Attendre que la base de données soit prête
         if (window.StockageDonnees) {
             await window.StockageDonnees.initialiserBaseDonnees();
             this.services.set('stockage', window.StockageDonnees);
             console.log('✅ Service de stockage initialisé');
         }
-        
+
         // Initialiser le gestionnaire de routes
         if (window.GestionnaireRoutes) {
             this.services.set('routes', window.GestionnaireRoutes);
             console.log('✅ Gestionnaire de routes initialisé');
         }
-        
+
         // Autres services...
         console.log('✅ Tous les services sont prêts');
     }
-    
+
     /**
      * Configure les écouteurs d'événements globaux
      */
@@ -277,23 +277,23 @@ class ApplicationPrincipale {
         document.addEventListener(EVENEMENTS.DONNEES_CHARGEES, (event) => {
             console.log('Données chargées:', event.detail);
         });
-        
+
         document.addEventListener(EVENEMENTS.ROUTE_CHANGEE, (event) => {
             console.log('Route changée:', event.detail.routeActuelle.titre);
         });
-        
+
         // Écouter les erreurs globales
         window.addEventListener('error', (event) => {
             console.error('Erreur globale:', event.error);
             this.gererErreurGlobale(event.error);
         });
-        
+
         // Écouter les erreurs de promesses non gérées
         window.addEventListener('unhandledrejection', (event) => {
             console.error('❌ Promesse rejetée:', event.reason);
             this.gererErreurGlobale(event.reason);
         });
-        
+
         // Écouter les changements de connexion
         window.addEventListener('online', () => {
             console.log('🌐 Connexion rétablie');
@@ -301,7 +301,7 @@ class ApplicationPrincipale {
                 afficherNotification('Connexion rétablie', 'succes');
             }
         });
-        
+
         window.addEventListener('offline', () => {
             console.log('🚫 Connexion perdue');
             if (typeof afficherNotification === 'function') {
@@ -309,41 +309,41 @@ class ApplicationPrincipale {
             }
         });
     }
-    
+
     /**
      * Initialise l'interface utilisateur
      */
     initialiserInterfaceUtilisateur() {
         // Configurer la recherche globale
         this.configurerRechercheGlobale();
-        
+
         // Configurer les boutons d'action
         this.configurerBoutonsAction();
-        
+
         // Configurer la sidebar
         this.configurerSidebar();
-        
+
         // Ajouter les styles CSS dynamiques si nécessaire
         this.ajouterStylesDynamiques();
     }
-    
+
     /**
      * Configure la recherche globale
      */
     configurerRechercheGlobale() {
         const champRecherche = document.getElementById('recherche-globale');
         const boutonRecherche = document.getElementById('bouton-recherche');
-        
+
         if (champRecherche && typeof creerDebounce === 'function') {
             const rechercheDebounce = creerDebounce((terme) => {
                 this.effectuerRechercheGlobale(terme);
             }, CONFIG_APPLICATION.delaiRecherche);
-            
+
             champRecherche.addEventListener('input', (event) => {
                 rechercheDebounce(event.target.value);
             });
         }
-        
+
         if (boutonRecherche) {
             boutonRecherche.addEventListener('click', () => {
                 const terme = champRecherche ? champRecherche.value : '';
@@ -351,7 +351,7 @@ class ApplicationPrincipale {
             });
         }
     }
-    
+
     /**
      * Configure les boutons d'action rapide
      */
@@ -363,7 +363,7 @@ class ApplicationPrincipale {
                 this.afficherNotifications();
             });
         }
-        
+
         // Bouton export rapide
         const boutonExport = document.getElementById('export-rapide');
         if (boutonExport) {
@@ -371,7 +371,7 @@ class ApplicationPrincipale {
                 this.exporterDonneesRapide();
             });
         }
-        
+
         // Menu profil
         const menuProfil = document.getElementById('menu-profil');
         if (menuProfil) {
@@ -380,25 +380,25 @@ class ApplicationPrincipale {
             });
         }
     }
-    
+
     /**
      * Configure la sidebar
      */
     configurerSidebar() {
         const boutonReduire = document.getElementById('reduire-sidebar');
         const sidebar = document.getElementById('sidebar');
-        
+
         if (boutonReduire && sidebar) {
             boutonReduire.addEventListener('click', () => {
                 sidebar.classList.toggle('reduite');
-                
+
                 // Sauvegarder la préférence
                 const estReduite = sidebar.classList.contains('reduite');
                 if (typeof sauvegarderDansStockage === 'function') {
                     sauvegarderDansStockage('sidebar_reduite', estReduite);
                 }
             });
-            
+
             // Restaurer l'état de la sidebar
             if (typeof recupererDuStockage === 'function') {
                 const estReduite = recupererDuStockage('sidebar_reduite', false);
@@ -408,7 +408,7 @@ class ApplicationPrincipale {
             }
         }
     }
-    
+
     /**
      * Ajoute des styles CSS dynamiques
      */
@@ -438,76 +438,83 @@ class ApplicationPrincipale {
         `;
         document.head.appendChild(style);
     }
-    
+
     /**
      * Affiche l'écran de chargement avec progression
      */
     afficherEcranChargement() {
         const ecranChargement = document.getElementById('ecran-chargement');
         const barreProgression = document.getElementById('barre-progression');
-        
+
         if (ecranChargement) {
             ecranChargement.classList.remove('masque');
         }
-        
+
         // Simuler la progression
         if (barreProgression) {
             let progression = 0;
             const interval = setInterval(() => {
                 progression += Math.random() * 30;
                 if (progression > 100) progression = 100;
-                
+
                 barreProgression.style.width = `${progression}%`;
-                
+
                 if (progression >= 100) {
                     clearInterval(interval);
                 }
             }, 200);
         }
     }
-    
+
     /**
      * Masque l'écran de chargement et affiche l'application
      */
     masquerEcranChargement() {
         const ecranChargement = document.getElementById('ecran-chargement');
         const application = document.getElementById('application');
-        
+
         if (ecranChargement) {
             ecranChargement.style.opacity = '0';
             setTimeout(() => {
                 ecranChargement.style.display = 'none';
             }, 500);
         }
-        
+
         if (application) {
             application.classList.remove('masque');
         }
-        
+
         // Démarrer le gestionnaire de routes
         if (this.services.has('routes')) {
             this.services.get('routes').ecouterChangementsURL();
         }
-        
+
         console.log('✅ Application affichée avec succès !');
     }
-    
+
     /**
      * Effectue une recherche globale
      */
     async effectuerRechercheGlobale(terme) {
         if (!terme || terme.length < 2) return;
-        
+
         console.log(`Recherche globale: "${terme}"`);
-        
-        // Implémenter la logique de recherche ici
-        // Pour l'instant, juste un log
-        
+
+        // Si on a le composant des cotisants chargé, déléguer la recherche
+        if (window.composantCotisants && typeof window.composantCotisants.rechercherGlobalement === 'function') {
+            window.composantCotisants.rechercherGlobalement(terme);
+            if (typeof afficherNotification === 'function') {
+                afficherNotification(`Filtrage des cotisants pour "${terme}"`, 'info', 800);
+            }
+            return;
+        }
+
+        // Comportement par défaut (placeholder)
         if (typeof afficherNotification === 'function') {
             afficherNotification(`Recherche pour "${terme}"`, 'info', 1000);
         }
     }
-    
+
     /**
      * Affiche les notifications
      */
@@ -516,7 +523,7 @@ class ApplicationPrincipale {
             afficherNotification('Aucune nouvelle notification', 'info');
         }
     }
-    
+
     /**
      * Export rapide des données
      */
@@ -525,14 +532,14 @@ class ApplicationPrincipale {
             if (typeof afficherNotification === 'function') {
                 afficherNotification('Export en cours...', 'info');
             }
-            
+
             // Simuler l'export pour l'instant
             setTimeout(() => {
                 if (typeof afficherNotification === 'function') {
                     afficherNotification('Export terminé !', 'succes');
                 }
             }, 1000);
-            
+
         } catch (erreur) {
             console.error('Erreur lors de l\'export:', erreur);
             if (typeof afficherNotification === 'function') {
@@ -540,7 +547,7 @@ class ApplicationPrincipale {
             }
         }
     }
-    
+
     /**
      * Affiche le menu profil
      */
@@ -549,13 +556,13 @@ class ApplicationPrincipale {
             afficherNotification('Menu profil - En développement', 'info');
         }
     }
-    
+
     /**
      * Gère les erreurs d'initialisation
      */
     gererErreurInitialisation(erreur) {
         console.error('Erreur critique d\'initialisation:', erreur);
-        
+
         const ecranChargement = document.getElementById('ecran-chargement');
         if (ecranChargement) {
             ecranChargement.innerHTML = `
@@ -571,19 +578,19 @@ class ApplicationPrincipale {
             `;
         }
     }
-    
+
     /**
      * Gère les erreurs globales
      */
     gererErreurGlobale(erreur) {
         console.error('Erreur globale:', erreur);
-        
+
         // Afficher une notification d'erreur
         if (typeof afficherNotification === 'function') {
             afficherNotification('Une erreur inattendue s\'est produite', 'erreur');
         }
     }
-    
+
     /**
      * Nettoie l'application
      */
@@ -594,7 +601,7 @@ class ApplicationPrincipale {
                 composant.nettoyer();
             }
         });
-        
+
         // Nettoyer les services
         this.services.forEach(service => {
             if (typeof service.nettoyer === 'function') {
@@ -608,7 +615,7 @@ class ApplicationPrincipale {
 // Initialiser l'application quand le DOM est prêt
 document.addEventListener('DOMContentLoaded', () => {
     console.log('🚀 Démarrage de l\'application...');
-    
+
     // Attendre un peu pour s'assurer que tous les scripts sont chargés
     setTimeout(() => {
         window.App = new ApplicationPrincipale();

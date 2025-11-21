@@ -313,6 +313,8 @@ class GestionnaireRoutes {
                     // Assigner la référence globale pour certains composants
                     if (route.composant === 'ComposantGestionCantons') {
                         window.composantCantons = composant;
+                    } else if (route.composant === 'ComposantListeCotisants') {
+                        window.composantCotisants = composant;
                     }
                 } else {
                     throw new Error(`Le composant ${route.composant} n'a pas de méthode rendre()`);

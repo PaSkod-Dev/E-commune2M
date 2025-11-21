@@ -240,14 +240,13 @@ class ComposantTableauBord extends BaseComposant {
                                     <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                                 </svg>
                             </div>
-                            <div class="kpi-valeur">247</div>
+                            <div class="kpi-valeur" id="kpi-cotisants-actifs">-</div>
                             <div class="kpi-libelle">Cotisants Actifs</div>
                             <div class="kpi-evolution positif">
                                 <svg class="icone-tendance" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polyline points="22,7 13.5,15.5 8.5,10.5 2,17"></polyline>
                                     <polyline points="16,7 22,7 22,13"></polyline>
                                 </svg>
-                                +12 ce mois
                             </div>
                         </div>
                     </div>
@@ -259,14 +258,13 @@ class ComposantTableauBord extends BaseComposant {
                                     <line x1="1" y1="10" x2="23" y2="10"></line>
                                 </svg>
                             </div>
-                            <div class="kpi-valeur">1,250,000</div>
+                            <div class="kpi-valeur" id="kpi-total-collecte">-</div>
                             <div class="kpi-libelle">Total Collecté (CFA)</div>
                             <div class="kpi-evolution positif">
                                 <svg class="icone-tendance" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polyline points="22,7 13.5,15.5 8.5,10.5 2,17"></polyline>
                                     <polyline points="16,7 22,7 22,13"></polyline>
                                 </svg>
-                                +8.5%
                             </div>
                         </div>
                     </div>
@@ -278,14 +276,13 @@ class ComposantTableauBord extends BaseComposant {
                                     <path d="M8 12l2 2 4-4"></path>
                                 </svg>
                             </div>
-                            <div class="kpi-valeur">89%</div>
+                            <div class="kpi-valeur" id="kpi-taux-participation">-</div>
                             <div class="kpi-libelle">Taux de Participation</div>
                             <div class="kpi-evolution positif">
                                 <svg class="icone-tendance" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polyline points="22,7 13.5,15.5 8.5,10.5 2,17"></polyline>
                                     <polyline points="16,7 22,7 22,13"></polyline>
                                 </svg>
-                                +2.1%
                             </div>
                         </div>
                     </div>
@@ -303,6 +300,40 @@ class ComposantTableauBord extends BaseComposant {
             </div>
         `;
     }
+
+    async initialiser() {
+        await this.mettreAJourIndicateurs();
+    }
+
+    async mettreAJourIndicateurs() {
+        try {
+            const cotisants = await window.StockageDonnees.obtenirTous('cotisants');
+
+            const nombreActifs = cotisants.filter(c => c.statut === STATUTS_COTISANT.ACTIF).length;
+            const totalCollecte = cotisants.reduce((somme, c) => somme + (c.montant_cotisation || 0), 0);
+            const tauxParticipation = cotisants.length > 0
+                ? Math.round((nombreActifs / cotisants.length) * 100)
+                : 0;
+
+            const elActifs = document.getElementById('kpi-cotisants-actifs');
+            const elTotal = document.getElementById('kpi-total-collecte');
+            const elTaux = document.getElementById('kpi-taux-participation');
+
+            if (elActifs) {
+                elActifs.textContent = String(nombreActifs);
+            }
+
+            if (elTotal) {
+                elTotal.textContent = formaterMontant(totalCollecte, false);
+            }
+
+            if (elTaux) {
+                elTaux.textContent = `${tauxParticipation}%`;
+            }
+        } catch (erreur) {
+            console.error('Erreur lors du calcul des indicateurs du tableau de bord:', erreur);
+        }
+    }
 }
 
 // Composants temporaires pour les autres pages
@@ -317,6 +348,7 @@ class ComposantListeCotisants extends BaseComposant {
             filtreCantonId: '',
             filtreVillageId: '',
             filtreQuartierId: '',
+            filtreRecherche: '',
             triColonne: 'nom',
             triDirection: 'asc',
             cotisantSelectionneId: null,
@@ -368,6 +400,15 @@ class ComposantListeCotisants extends BaseComposant {
                         <select id="filtre-quartier" class="select-moderne">
                             <option value="">Tous les quartiers</option>
                         </select>
+                    </div>
+                    <div class="filtre-groupe">
+                        <label>Recherche</label>
+                        <input type="search" id="filtre-recherche" class="champ-saisie" placeholder="Rechercher...">
+                    </div>
+                    <div class="filtre-groupe">
+                        <button type="button" id="btn-reinitialiser-filtres-cotisants" class="bouton bouton-secondaire">
+                            Réinitialiser les filtres
+                        </button>
                     </div>
                 </div>
 
@@ -421,7 +462,7 @@ class ComposantListeCotisants extends BaseComposant {
                                 <div class="groupe-champ double-champ">
                                     <div>
                                         <label class="etiquette-champ" for="nom-cotisant">Nom *</label>
-                                        <input type="text" id="nom-cotisant" name="nom" class="champ-saisie" required>
+                                        <input type="text" id="nom-cotisant" name="nom" class="champ-saisie" required autofocus>
                                     </div>
                                     <div>
                                         <label class="etiquette-champ" for="prenom-cotisant">Prénom *</label>
@@ -647,6 +688,8 @@ class ComposantListeCotisants extends BaseComposant {
         const filtreCanton = document.getElementById('filtre-canton');
         const filtreVillage = document.getElementById('filtre-village');
         const filtreQuartier = document.getElementById('filtre-quartier');
+        const filtreRecherche = document.getElementById('filtre-recherche');
+        const btnReinitialiserFiltres = document.getElementById('btn-reinitialiser-filtres-cotisants');
 
         filtreCanton?.addEventListener('change', (e) => {
             this.etat.filtreCantonId = e.target.value;
@@ -660,6 +703,27 @@ class ComposantListeCotisants extends BaseComposant {
 
         filtreQuartier?.addEventListener('change', (e) => {
             this.etat.filtreQuartierId = e.target.value;
+            this.afficherCotisants();
+        });
+
+        filtreRecherche?.addEventListener('input', (e) => {
+            this.etat.filtreRecherche = e.target.value.trim();
+            this.afficherCotisants();
+        });
+
+        btnReinitialiserFiltres?.addEventListener('click', () => {
+            // Réinitialiser l'état des filtres
+            this.etat.filtreCantonId = '';
+            this.etat.filtreVillageId = '';
+            this.etat.filtreQuartierId = '';
+            this.etat.filtreRecherche = '';
+
+            // Réinitialiser les éléments de formulaire
+            if (filtreCanton) filtreCanton.value = '';
+            if (filtreVillage) filtreVillage.value = '';
+            if (filtreQuartier) filtreQuartier.value = '';
+            if (filtreRecherche) filtreRecherche.value = '';
+
             this.afficherCotisants();
         });
 
@@ -688,8 +752,20 @@ class ComposantListeCotisants extends BaseComposant {
             if (!option) return;
             const villageId = option.dataset.villageId;
             const cantonId = option.dataset.cantonId;
-            if (villageId && villageSelect) villageSelect.value = villageId;
-            if (cantonId && cantonSelect) cantonSelect.value = cantonId;
+
+            if (villageId && villageSelect) {
+                const villageOptionExiste = Array.from(villageSelect.options).some(opt => opt.value === String(villageId));
+                if (villageOptionExiste) {
+                    villageSelect.value = String(villageId);
+                }
+            }
+
+            if (cantonId && cantonSelect) {
+                const cantonOptionExiste = Array.from(cantonSelect.options).some(opt => opt.value === String(cantonId));
+                if (cantonOptionExiste) {
+                    cantonSelect.value = String(cantonId);
+                }
+            }
         });
 
         // Event delegation pour supprimer un cotisant dans le tableau
@@ -803,6 +879,11 @@ class ComposantListeCotisants extends BaseComposant {
 
         overlay.classList.remove('masque');
         document.body.classList.add('modal-open');
+
+        const champNom = document.getElementById('nom-cotisant');
+        if (champNom) {
+            setTimeout(() => champNom.focus(), 0);
+        }
     }
 
     remplirFormulaireCotisant(cotisant) {
@@ -852,6 +933,11 @@ class ComposantListeCotisants extends BaseComposant {
             }
             overlay.classList.remove('masque');
             document.body.classList.add('modal-open');
+
+            const champNom = document.getElementById('nom-cotisant');
+            if (champNom) {
+                setTimeout(() => champNom.focus(), 0);
+            }
         }
     }
 
@@ -866,66 +952,74 @@ class ComposantListeCotisants extends BaseComposant {
     }
 
     async sauvegarderCotisant() {
-        const form = document.getElementById('form-cotisant');
-        if (!form) return;
-
-        // Empêche une deuxième soumission pendant que la première est en cours
         if (this.sauvegardeCotisantEnCours) {
             return;
         }
 
-        const formData = new FormData(form);
-
-        const cotisant = {
-            nom: formData.get('nom').trim(),
-            prenom: formData.get('prenom').trim(),
-            sexe: formData.get('sexe'),
-            telephone: formData.get('telephone').trim(),
-            fonction: formData.get('fonction'),
-            autre_fonction: formData.get('autre_fonction')?.trim() || null,
-            canton_id: parseInt(formData.get('canton_id')),
-            village_id: parseInt(formData.get('village_id')),
-            quartier_id: parseInt(formData.get('quartier_id')),
-            montant_cotisation: formData.get('montant_cotisation') ? parseInt(formData.get('montant_cotisation')) : 0,
-            date_cotisation: formData.get('date_cotisation') || new Date().toISOString().slice(0, 10),
-            evenement: 'signature_convention_2024',
-            statut: STATUTS_COTISANT.ACTIF
-        };
-
-        // Validation
-        if (!cotisant.nom || !cotisant.prenom || !cotisant.sexe ||
-            !cotisant.quartier_id || !cotisant.montant_cotisation) {
-            alert('Merci de remplir tous les champs obligatoires.');
+        const form = document.getElementById('form-cotisant');
+        if (!form) {
             return;
         }
 
-        // À partir d’ici, on bloque une deuxième soumission
-        this.sauvegardeCotisantEnCours = true;
-        const boutonSauvegarder = document.getElementById('btn-sauvegarder-cotisant');
-        if (boutonSauvegarder) {
-            boutonSauvegarder.disabled = true;
+        const cantonId = form.canton_id ? form.canton_id.value : '';
+        const villageId = form.village_id ? form.village_id.value : '';
+        const quartierId = form.quartier_id ? form.quartier_id.value : '';
+        const nom = form.nom ? form.nom.value.trim() : '';
+        const prenom = form.prenom ? form.prenom.value.trim() : '';
+        const sexe = form.sexe ? form.sexe.value : '';
+        const fonction = form.fonction ? form.fonction.value : '';
+        const autreFonction = form.autre_fonction ? form.autre_fonction.value.trim() : '';
+        const telephone = form.telephone ? form.telephone.value.trim() : '';
+        const montantBrut = form.montant_cotisation ? form.montant_cotisation.value : '';
+        const dateCotisation = form.date_cotisation ? form.date_cotisation.value : '';
+
+        if (!cantonId || !villageId || !quartierId || !nom || !prenom || !sexe || !fonction || !montantBrut) {
+            console.error('Champs obligatoires manquants lors de la sauvegarde du cotisant');
+            return;
         }
+
+        const montantCotisation = Number(montantBrut);
+
+        const statutActif = (typeof window !== 'undefined'
+            && window.STATUTS_COTISANT
+            && window.STATUTS_COTISANT.ACTIF)
+            ? window.STATUTS_COTISANT.ACTIF
+            : 'actif';
+
+        const donneesCotisant = {
+            canton_id: parseInt(cantonId, 10),
+            village_id: parseInt(villageId, 10),
+            quartier_id: parseInt(quartierId, 10),
+            nom,
+            prenom,
+            sexe,
+            fonction,
+            autre_fonction: autreFonction || null,
+            telephone: telephone || null,
+            montant_cotisation: isNaN(montantCotisation) ? 0 : montantCotisation,
+            date_cotisation: dateCotisation || null,
+            statut: statutActif
+        };
+
+        this.sauvegardeCotisantEnCours = true;
 
         try {
             if (this.etat.modeEditionCotisant && this.etat.cotisantEnEdition) {
                 const cotisantMisAJour = {
                     ...this.etat.cotisantEnEdition,
-                    ...cotisant
+                    ...donneesCotisant
                 };
                 await window.StockageDonnees.mettreAJour('cotisants', cotisantMisAJour);
             } else {
-                await window.StockageDonnees.ajouter('cotisants', cotisant);
+                await window.StockageDonnees.ajouter('cotisants', donneesCotisant);
             }
+
             this.masquerFormulaireCotisant();
             await this.chargerCotisants();
         } catch (erreur) {
             console.error('Erreur lors de la sauvegarde du cotisant:', erreur);
-            alert('Erreur lors de la sauvegarde du cotisant.');
         } finally {
             this.sauvegardeCotisantEnCours = false;
-            if (boutonSauvegarder) {
-                boutonSauvegarder.disabled = false;
-            }
         }
     }
 
@@ -944,6 +1038,7 @@ class ComposantListeCotisants extends BaseComposant {
             filtreCantonId,
             filtreVillageId,
             filtreQuartierId,
+            filtreRecherche,
             triColonne,
             triDirection,
             cotisantSelectionneId
@@ -953,6 +1048,12 @@ class ComposantListeCotisants extends BaseComposant {
             if (filtreQuartierId && String(c.quartier_id) !== String(filtreQuartierId)) return false;
             if (filtreVillageId && String(c.village_id) !== String(filtreVillageId)) return false;
             if (filtreCantonId && String(c.canton_id) !== String(filtreCantonId)) return false;
+
+            if (filtreRecherche && filtreRecherche.trim() !== '') {
+                const terme = filtreRecherche.trim().toLowerCase();
+                const texteCible = `${c.nom || ''} ${c.prenom || ''} ${c.telephone || ''}`.toLowerCase();
+                if (!texteCible.includes(terme)) return false;
+            }
             return true;
         });
 
@@ -1081,6 +1182,15 @@ class ComposantListeCotisants extends BaseComposant {
         conteneur.innerHTML = html;
     }
 
+    /**
+     * Recherche globale sur les cotisants (utilisée par la barre de recherche globale)
+     * @param {string} terme - Terme de recherche saisi par l'utilisateur
+     */
+    rechercherGlobalement(terme) {
+        this.etat.filtreRecherche = (terme || '').trim();
+        this.afficherCotisants();
+    }
+
     async supprimerCotisant(id) {
         const cotisant = this.etat.cotisants.find(c => c.id === id);
         const nomComplet = cotisant
@@ -1199,11 +1309,18 @@ class ComposantStatistiques extends BaseComposant {
 
     async configurerEvenements() {
         const typeSelect = document.getElementById('type-classement');
+        const critereSelect = document.getElementById('critere-classement');
         const actualiserBtn = document.getElementById('actualiser-classement');
 
         if (typeSelect) {
             typeSelect.addEventListener('change', (e) => {
                 this.gererChangementType(e.target.value);
+            });
+        }
+
+        if (critereSelect) {
+            critereSelect.addEventListener('change', () => {
+                this.actualiserClassement();
             });
         }
 
