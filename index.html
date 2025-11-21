@@ -2,10 +2,330 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="refresh" content="0; url=E-commune2M/index.html">
-    <title>E-commune2M</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Fallback si le JavaScript est désactivé -->
+    <meta http-equiv="refresh" content="3; url=E-commune2M/index.html">
+    <title>E-commune2M · Chargement</title>
+
+    <style>
+        :root {
+            --couleur-fond-1: #0f172a;
+            --couleur-fond-2: #1e293b;
+            --couleur-accent: #38bdf8;
+            --couleur-accent-2: #22c55e;
+            --couleur-texte-principal: #e5e7eb;
+            --couleur-texte-secondaire: #9ca3af;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            height: 100%;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: radial-gradient(circle at top left, #1d4ed8 0, transparent 50%),
+                        radial-gradient(circle at bottom right, #22c55e 0, transparent 50%),
+                        linear-gradient(135deg, var(--couleur-fond-1), var(--couleur-fond-2));
+            color: var(--couleur-texte-principal);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .ecran-chargement {
+            position: relative;
+            width: 100%;
+            max-width: 520px;
+            padding: 2.5rem 2.25rem;
+            border-radius: 1.5rem;
+            background: rgba(15, 23, 42, 0.9);
+            box-shadow:
+                0 24px 60px rgba(15, 23, 42, 0.8),
+                0 0 0 1px rgba(148, 163, 184, 0.18);
+            backdrop-filter: blur(22px);
+        }
+
+        .halo {
+            position: absolute;
+            inset: -1px;
+            border-radius: inherit;
+            background: conic-gradient(from 120deg,
+                rgba(56, 189, 248, 0.25),
+                rgba(34, 197, 94, 0.15),
+                rgba(59, 130, 246, 0.3),
+                rgba(56, 189, 248, 0.25)
+            );
+            opacity: 0.75;
+            filter: blur(18px);
+            z-index: -1;
+            animation: halo-rotation 14s linear infinite;
+        }
+
+        .contenu-chargement {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 1.75rem;
+        }
+
+        .entete-app {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo {
+            width: 3rem;
+            height: 3rem;
+            border-radius: 0.95rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            box-shadow:
+                0 12px 30px rgba(15, 23, 42, 0.65),
+                0 0 0 1px rgba(15, 23, 42, 0.9);
+            overflow: hidden;
+        }
+
+        .logo-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+
+        .titre-app {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+
+        .titre-app-principal {
+            font-size: 1.2rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .badge-env {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.15rem 0.55rem;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid rgba(148, 163, 184, 0.6);
+            color: var(--couleur-texte-secondaire);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.16em;
+        }
+
+        .badge-env-point {
+            width: 0.4rem;
+            height: 0.4rem;
+            border-radius: 999px;
+            background: linear-gradient(135deg, var(--couleur-accent), var(--couleur-accent-2));
+            box-shadow: 0 0 0 6px rgba(56, 189, 248, 0.25);
+        }
+
+        .section-etat {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .titre-section {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--couleur-texte-secondaire);
+            text-transform: uppercase;
+            letter-spacing: 0.16em;
+        }
+
+        .barre-progression {
+            position: relative;
+            width: 100%;
+            height: 0.5rem;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.85);
+            overflow: hidden;
+        }
+
+        .barre-progression-interne {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg,
+                rgba(56, 189, 248, 0.1),
+                rgba(56, 189, 248, 0.9),
+                rgba(34, 197, 94, 0.9),
+                rgba(56, 189, 248, 0.1)
+            );
+            transform: translateX(-60%);
+            animation: progression 2.4s ease-in-out infinite;
+        }
+
+        .ligne-etat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            color: var(--couleur-texte-secondaire);
+        }
+
+        .etat-principal {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .point-pulse {
+            width: 0.55rem;
+            height: 0.55rem;
+            border-radius: 999px;
+            background: var(--couleur-accent);
+            box-shadow:
+                0 0 0 0 rgba(56, 189, 248, 0.8);
+            animation: pulse 1.6s ease-out infinite;
+        }
+
+        .texte-etat {
+            color: var(--couleur-texte-principal);
+        }
+
+        .texte-secondaire {
+            font-size: 0.8rem;
+            color: var(--couleur-texte-secondaire);
+        }
+
+        .pied-page {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.75rem;
+            color: var(--couleur-texte-secondaire);
+        }
+
+        .pictogramme {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.5rem;
+            height: 1.5rem;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid rgba(148, 163, 184, 0.6);
+            font-size: 0.9rem;
+        }
+
+        @keyframes progression {
+            0% {
+                transform: translateX(-60%);
+            }
+            50% {
+                transform: translateX(0%);
+            }
+            100% {
+                transform: translateX(60%);
+            }
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.8);
+                opacity: 1;
+            }
+            70% {
+                box-shadow: 0 0 0 12px rgba(56, 189, 248, 0);
+                opacity: 0.9;
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(56, 189, 248, 0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes halo-rotation {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media (max-width: 640px) {
+            .ecran-chargement {
+                margin: 0 1.25rem;
+                padding: 1.75rem 1.5rem;
+            }
+
+            .titre-app-principal {
+                font-size: 1.05rem;
+            }
+        }
+    </style>
+
+    <script>
+        // Redirection JS (plus fluide) – le meta refresh sert de fallback
+        window.addEventListener('load', function () {
+            // On laisse le temps à l'animation d'être visible
+            setTimeout(function () {
+                window.location.href = 'E-commune2M/index.html';
+            }, 1800);
+        });
+    </script>
 </head>
 <body>
-    <p>Redirection vers l'application…</p>
+    <main class="ecran-chargement" aria-label="Chargement de l'application E-commune2M">
+        <div class="halo" aria-hidden="true"></div>
+        <div class="contenu-chargement">
+            <header class="entete-app">
+                <div class="logo" aria-hidden="true">
+                    <img src="E-commune2M/assets/logo/logoApp.png" alt="Logo E-commune2M" class="logo-image">
+                </div>
+                <div class="titre-app">
+                    <div class="titre-app-principal">E-commune2M</div>
+                    <div class="badge-env">
+                        <span class="badge-env-point"></span>
+                        <span>Gestionnaire de cotisations</span>
+                    </div>
+                </div>
+            </header>
+
+            <section class="section-etat" aria-live="polite">
+                <h2 class="titre-section">Préparation de l'application</h2>
+                <div class="barre-progression">
+                    <div class="barre-progression-interne"></div>
+                </div>
+                <div class="ligne-etat">
+                    <div class="etat-principal">
+                        <span class="point-pulse" aria-hidden="true"></span>
+                        <span class="texte-etat">Chargement de l'interface E-commune2M…</span>
+                    </div>
+                    <span class="texte-secondaire">Veuillez patienter</span>
+                </div>
+                <p class="texte-secondaire">
+                    Initialisation du stockage local, des styles avancés et des composants de gestion
+                    des cantons, villages, quartiers et cotisants.
+                </p>
+            </section>
+
+            <footer class="pied-page">
+                <div>
+                    <span class="texte-secondaire">Version locale</span>
+                </div>
+                <div class="pictogramme" aria-hidden="true">⚙️</div>
+            </footer>
+        </div>
+    </main>
 </body>
 </html>
