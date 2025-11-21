@@ -481,9 +481,6 @@ class ComposantListeCotisants extends BaseComposant {
                         </div>
                     </div>
                 </div>
-                                <div id="formulaire-cotisant" class="overlay-modal masque">
-                    ...
-                </div>
 
                 <!-- Modale de confirmation de suppression (identique à celle des cantons) -->
                 <div id="modal-confirmation-suppression" class="overlay-modal masque">
@@ -1601,7 +1598,7 @@ class ComposantGestionCantons extends BaseComposant {
 
         return this.etat.tousLesVillages.filter(v => v.canton_id === cantonId).length;
     }
-    
+
     async demanderConfirmation({ titre, message, texteConfirmer = 'Supprimer' } = {}) {
         const overlay = document.getElementById('modal-confirmation-suppression');
         if (!overlay) {
