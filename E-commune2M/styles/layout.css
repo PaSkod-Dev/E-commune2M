@@ -38,20 +38,18 @@
 
 .drapeau-togo-mini {
     width: 32px;
-    height: 24px;
-    background: linear-gradient(to bottom, var(--vert-togo) 33%, var(--jaune-togo) 33% 66%, var(--rouge-togo) 66%);
-    border-radius: var(--rayon-sm);
+    height: 32px;
+    border-radius: var(--rayon-lg);
     position: relative;
+    overflow: hidden;
+    background-image: url('../assets/logo/logoApp.png');
+    background-size: cover;
+    background-position: center;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.6);
 }
 
 .drapeau-togo-mini::before {
-    content: "⭐";
-    position: absolute;
-    top: 50%;
-    left: 20%;
-    transform: translate(-50%, -50%);
-    color: white;
-    font-size: 12px;
+    content: "";
 }
 
 .titre-application {
@@ -321,42 +319,61 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(135deg, var(--couleur-primaire) 0%, var(--couleur-primaire-foncee) 100%);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 9999;
+    padding: var(--espacement-xl);
+    background:
+        radial-gradient(circle at top left, rgba(56, 189, 248, 0.22) 0, transparent 55%),
+        radial-gradient(circle at bottom right, rgba(34, 197, 94, 0.2) 0, transparent 55%),
+        linear-gradient(135deg, var(--couleur-primaire-foncee) 0%, #020617 100%);
 }
 
 .spinner-chargement {
+    position: relative;
+    width: 100%;
+    max-width: 480px;
+    padding: var(--espacement-xl);
+    border-radius: var(--rayon-xl);
+    background: rgba(15, 23, 42, 0.94);
+    box-shadow:
+        0 24px 60px rgba(15, 23, 42, 0.9),
+        0 0 0 1px rgba(15, 23, 42, 0.85);
     text-align: center;
-    color: white;
+    color: var(--couleur-neutre-50);
+}
+
+.spinner-chargement h2 {
+    font-size: var(--taille-texte-lg);
+    font-weight: 600;
+    margin-bottom: var(--espacement-md);
 }
 
 .drapeau-togo {
-    width: 80px;
-    height: 60px;
-    background: linear-gradient(to bottom, var(--vert-togo) 33%, var(--jaune-togo) 33% 66%, var(--rouge-togo) 66%);
+    width: 88px;
+    height: 64px;
     border-radius: var(--rayon-lg);
     margin: 0 auto var(--espacement-lg);
     position: relative;
+    box-shadow:
+        0 16px 32px rgba(15, 23, 42, 0.8),
+        0 0 0 1px rgba(15, 23, 42, 0.9);
     animation: pulse 2s infinite;
+    overflow: hidden;
+    background-image: url('../assets/logo/logoApp.png');
+    background-size: cover;
+    background-position: center;
 }
 
 .drapeau-togo::before {
-    content: "⭐";
-    position: absolute;
-    top: 50%;
-    left: 25%;
-    transform: translate(-50%, -50%);
-    color: white;
-    font-size: 24px;
+    content: "";
 }
 
 .barre-progression {
-    width: 200px;
-    height: 4px;
-    background-color: rgba(255, 255, 255, 0.2);
+    width: 100%;
+    height: 6px;
+    background-color: rgba(148, 163, 184, 0.35);
     border-radius: var(--rayon-complet);
     overflow: hidden;
     margin-top: var(--espacement-lg);
@@ -364,10 +381,13 @@
 
 .progression {
     height: 100%;
-    background-color: var(--couleur-accent);
     border-radius: var(--rayon-complet);
+    background: linear-gradient(90deg,
+            rgba(56, 189, 248, 0.1),
+            rgba(56, 189, 248, 0.9),
+            rgba(34, 197, 94, 0.9),
+            rgba(56, 189, 248, 0.1));
     transition: width var(--transition-normale);
-    animation: pulse 1.5s infinite;
 }
 
 /* Responsive Design */
