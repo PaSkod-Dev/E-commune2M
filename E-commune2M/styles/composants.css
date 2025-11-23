@@ -362,7 +362,10 @@
 }
 
 body.modal-open {
-    overflow: hidden;
+    /* On bloque seulement un éventuel scroll horizontal,
+       mais on laisse le scroll vertical fonctionner */
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 
 .modal {

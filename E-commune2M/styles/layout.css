@@ -202,7 +202,7 @@
 
 /* Contenu Principal */
 .contenu-principal {
-    display: flex;
+    /* plus de flex ici : on laisse le flux normal */
     margin-top: var(--hauteur-navbar);
     min-height: calc(100vh - var(--hauteur-navbar));
 }
