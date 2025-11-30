@@ -7,17 +7,17 @@
 const CONFIG_APPLICATION = {
     nom: 'Gestionnaire Cotisations Togo',
     version: '2.0.0',
-    auteur: 'Équipe Développement Togo',
+    auteur: 'Équipe Developement PASKOD DEV',
     dateCreation: '2025-11-14',
-    
+
     // Base de données locale
     nomBaseDonnees: 'cotisations_togo_db',
     versionBaseDonnees: 2, // V2: Ajout de la table quartiers pour structure relationnelle complète
-    
+
     // Pagination
     elementsParPage: 25,
     optionsPagination: [10, 25, 50, 100],
-    
+
     // Délais et timeouts
     delaiRecherche: 300, // ms
     delaiSauvegarde: 1000, // ms
@@ -154,7 +154,7 @@ const MESSAGES = {
         DONNEES_IMPORTEES: 'Données importées avec succès !',
         SAUVEGARDE_REUSSIE: 'Sauvegarde réussie !'
     },
-    
+
     // Messages d'erreur
     ERREUR: {
         CHAMP_REQUIS: 'Ce champ est obligatoire',
@@ -171,7 +171,7 @@ const MESSAGES = {
         ACCES_REFUSE: 'Accès refusé',
         DONNEES_CORROMPUES: 'Données corrompues détectées'
     },
-    
+
     // Messages d'information
     INFO: {
         CHARGEMENT: 'Chargement en cours...',
@@ -181,7 +181,7 @@ const MESSAGES = {
         EXPORT_COURS: 'Export en cours...',
         IMPORT_COURS: 'Import en cours...'
     },
-    
+
     // Messages de confirmation
     CONFIRMATION: {
         SUPPRIMER_COTISANT: 'Êtes-vous sûr de vouloir supprimer ce cotisant ?',

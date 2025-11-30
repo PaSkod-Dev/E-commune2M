@@ -167,7 +167,35 @@
     <script src="js/utilitaires/helpers.js"></script>
     <script src="js/services/stockage-donnees.js"></script>
     <script src="js/services/gestionnaire-routes.js"></script>
+    
+    <!-- Composants de base -->
     <script src="js/composants/base-composant.js"></script>
+    
+    <!-- Composants UI -->
+    <script src="js/composants/tableau-bord.js"></script>
+    <script src="js/composants/liste-cotisants.js"></script>
+    <script src="js/composants/gestion-paiements.js"></script>
+    <script src="js/composants/statistiques.js"></script>
+    <script src="js/composants/gestion-cantons.js"></script>
+    <script src="js/composants/rapports.js"></script>
+    <script src="js/composants/parametres.js"></script>
+    
+    <!-- Rendre les composants disponibles globalement -->
+    <script>
+        if (typeof window !== 'undefined') {
+            window.ComposantTableauBord = ComposantTableauBord;
+            window.ComposantListeCotisants = ComposantListeCotisants;
+            window.ComposantGestionPaiements = ComposantGestionPaiements;
+            window.ComposantStatistiques = ComposantStatistiques;
+            window.ComposantGestionCantons = ComposantGestionCantons;
+            window.ComposantRapports = ComposantRapports;
+            window.ComposantParametres = ComposantParametres;
+            
+            // Référence globale pour les actions des tableaux
+            window.composantCantons = null;
+        }
+    </script>
+    
     <script src="js/application.js"></script>
     <script src="js/services/classification-service.js"></script>
 </body>
